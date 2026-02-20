@@ -1,0 +1,19 @@
+workspace(name = "pvs_build")
+
+local_repository(
+    name = "gbbs_bfs",
+    path = "../benchmarks/BFS/GBBS",
+)
+
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+git_repository(
+    name = "parlaylib",
+    remote = "https://github.com/ParAlg/parlaylib.git",
+    commit = "352f5367a6b3bd2f0c6f05882cdd02e978e349ea",
+    strip_prefix = "include/",
+)
+git_repository(
+    name = "gbbs",
+    remote = "git@github.com:ParAlg/gbbs.git",
+    commit = "bd48872385ad907010417bfa939f4fca04e563b8",
+)
