@@ -1,0 +1,3 @@
+[submodule "baselines/GBBS"]
+	path = baselines/GBBS
+	url = https://github.com/ParAlg/gbbs
