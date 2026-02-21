@@ -24,86 +24,41 @@
 #pragma once
 
 #include "gbbs/gbbs.h"
-//#include "verify.h"
-/*
+
 namespace gbbs {
 
 template <class W>
 struct BFS_F {
-  uintE* Parents;
-  BFS_F(uintE* _Parents) : Parents(_Parents) {}
-  inline bool update(uintE s, uintE d, W w) {
-    if (Parents[d] == UINT_E_MAX) {
-      Parents[d] = s;
-      return 1;
-    } else {
-      return 0;
+    uintE* Level;
+    uintE cur_level;
+    BFS_F(uintE* _Level, uintE _cur) : Level(_Level), cur_level(_cur) {}
+    inline bool update(uintE s, uintE d, W w) {
+        if (Level[d] == UINT_E_MAX) {
+            Level[d] = cur_level;
+            return 1;
+        } 
+        else return 0;
     }
-  }
-  inline bool updateAtomic(uintE s, uintE d, W w) {
-    return (gbbs::atomic_compare_and_swap(&Parents[d], UINT_E_MAX, s));
-  }
-  inline bool cond(uintE d) { return (Parents[d] == UINT_E_MAX); }
+    inline bool updateAtomic(uintE s, uintE d, W w) {
+        return gbbs::atomic_compare_and_swap(&Level[d], UINT_E_MAX, cur_level);
+    }
+    inline bool cond(uintE d) { return (Level[d] == UINT_E_MAX); }
 };
 
 template <class Graph>
 inline sequence<uintE> BFS(Graph& G, uintE src) {
-  using W = typename Graph::weight_type;
-  auto Parents =
-      sequence<uintE>::from_function(G.n, [&](size_t i) { return UINT_E_MAX; });
-  Parents[src] = src;
-
-  vertexSubset Frontier(G.n, src);
-  size_t reachable = 0;
-  while (!Frontier.isEmpty()) {
-    //std::cout << Frontier.size() << "\n";
-    reachable += Frontier.size();
-    Frontier = edgeMap(G, Frontier, BFS_F<W>(Parents.begin()), -1,
-                       sparse_blocked | dense_parallel);
-  }
-  //std::cout << "Reachable: " << reachable << "\n";
-  return Parents;
+    using W = typename Graph::weight_type;
+    auto Level = sequence<uintE>::from_function(G.n, [&](size_t i) { return UINT_E_MAX; });
+    Level[src] = 0;
+    vertexSubset Frontier(G.n, src);
+    uintE cur = 1;
+    size_t reachable = 0;
+    while (!Frontier.isEmpty()) {
+        reachable += Frontier.size();
+        Frontier = edgeMap(G, Frontier, BFS_F<W>(Level.begin(), cur), -1, sparse_blocked | dense_parallel);
+        cur++;
+    }
+    return Level;
 }
 
-}  // namespace gbbs
-*/
-namespace gbbs {
-template <class W>
-struct BFS_F {
-  uintE* Level;
-  uintE cur_level;
-  BFS_F(uintE* _Level, uintE _cur) : Level(_Level), cur_level(_cur) {}
-  inline bool update(uintE s, uintE d, W w) {
-    if (Level[d] == UINT_E_MAX) {
-      Level[d] = cur_level;
-      return 1;
-    } else return 0;
-  }
-  inline bool updateAtomic(uintE s, uintE d, W w) {
-    return gbbs::atomic_compare_and_swap(&Level[d], UINT_E_MAX, cur_level);
-  }
-  inline bool cond(uintE d) { return (Level[d] == UINT_E_MAX); }
-};
-template <class Graph>
-inline sequence<uintE> BFS(Graph& G, uintE src) {
-  using W = typename Graph::weight_type;
-  auto Level =
-      sequence<uintE>::from_function(G.n, [&](size_t i) { return UINT_E_MAX; });
-  Level[src] = 0;
-
-  vertexSubset Frontier(G.n, src);
-  uintE cur = 1;
-  size_t reachable = 0;
-
-  while (!Frontier.isEmpty()) {
-    reachable += Frontier.size();
-    Frontier = edgeMap(G, Frontier,
-                       BFS_F<W>(Level.begin(), cur),
-                       -1,
-                       sparse_blocked | dense_parallel);
-    cur++;
-  }
-  //std::cout << "Reachable: " << reachable << "\n";
-  return Level;
-}
-}
+} // namespace gbbs

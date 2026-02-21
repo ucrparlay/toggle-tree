@@ -1,8 +1,9 @@
-#include "BFS.h"
-#include "graph.h"
+#include <parlay/io.h>
 #include "verify.h"
-
+#include "graph.h"
+#include "BFS.h"
 #define Algorithm BFS
+
 int main(int argc, char** argv) {
     Graph G;
     const char* filepath = argv[1];

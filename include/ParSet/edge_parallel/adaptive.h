@@ -5,7 +5,8 @@
 #include <climits>
 #include <utility>
 #include <algorithm>
-#include "../.scheduler/parlay/sequence.h"
+//#include "../.scheduler/parlay/sequence.h"
+#include <parlay/sequence.h>
 
 namespace ParSet {
 

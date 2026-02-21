@@ -13,3 +13,4 @@ git_repository(
 
 local_repository(name = "benchmark_utils", path = "../../benchmark_utils/graph",)
 local_repository(name = "gbbs_bfs", path = "../../benchmarks/BFS/GBBS",)
+local_repository(name = "gbbs_mis", path = "../../benchmarks/MIS/GBBS",)

@@ -1,0 +1,5 @@
+Vendored from: https://github.com/cmuparlay/parlaylib
+Commit: 51017699dcc421f80479cdb238d3092233ad0d26
+
+Since parallel graph algorithms usually already have parlaylib as external repository,
+parlaylib is vendored here only for benchmarking.
