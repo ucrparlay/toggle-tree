@@ -1,1 +1,4 @@
-/bazel/bazel-*
+/benchmark_utils/bazel/bazel-*
+config.sh
+test
+*.csv

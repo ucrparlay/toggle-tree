@@ -1,0 +1,16 @@
+Vendored from: https://github.com/cmuparlay/parlaylib
+Commit: 51017699dcc421f80479cdb238d3092233ad0d26
+
+This project vendors its own copy of ParlayLib and may apply local modifications to it.
+
+IMPORTANT:
+VertexSet relies on this specific Parlay runtime instance.
+Linking or including any external version of ParlayLib
+in the same process is unsupported and may lead to:
+
+  - Multiple scheduler instances
+  - Thread oversubscription
+  - ODR violations
+  - Undefined behavior
+
+Users must NOT link another copy of ParlayLib together with VertexSet.

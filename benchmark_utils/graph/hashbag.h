@@ -3,12 +3,9 @@
 
 #include <atomic>
 
-#include "../parlay/delayed_sequence.h"
-#include "../parlay/primitives.h"
-#include "../parlay/sequence.h"
-#include "../parlay/utilities.h"
+#include "../../include/vertex_set/scheduler/parlay/io.h"
 #include "sampler.h"
-#include "../graph/utils.h"
+#include "utils.h"
 
 template <class ET>
 class hashbag {

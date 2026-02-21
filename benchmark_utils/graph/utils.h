@@ -77,3 +77,10 @@ inline bool write_max(ET *a, ET b, F less = {}) {
   while (less(c, b) && !(r = atomic_compare_and_swap(a, c, b)));
   return r;
 }
+
+static inline bool write_min(uint32_t& ref,uint32_t v){
+    uint32_t old=__atomic_load_n(&ref,__ATOMIC_RELAXED);
+    if(old==v)return false;
+    while(old>v&&!__atomic_compare_exchange_n(&ref,&old,v,1,__ATOMIC_RELAXED,__ATOMIC_RELAXED));
+    return old>v;
+}

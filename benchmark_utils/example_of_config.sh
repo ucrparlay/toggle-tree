@@ -1,0 +1,62 @@
+# To run benchmarks: 
+# Copy this file, change BIN_DIR to your diectory containing graphs, and rename it as "config.sh"
+BIN_DIR=/home/csgrads/xjian140/data/graphs/bin/
+GRAPHS=(
+    twitter_sym
+    com-orkut_sym
+    friendster_sym
+    soc-LiveJournal1_sym
+    eu-2015-host_sym
+    sd_arc_sym
+    enwiki-2023_sym
+    arabic_sym
+    planet_sym
+    uk-2002_sym
+    europe_sym
+    indochina_sym
+    asia_sym
+    north-america_sym
+    us_sym
+    socfb-konect_sym
+    socfb-uci-uni_sym
+    hollywood_2009_sym
+    africa_sym
+    hugebubbles-00020_sym
+    RoadUSA_sym
+    hugetrace-00020_sym
+    Germany_sym
+    in_2004_sym
+    skitter_sym
+    #clueweb_sym
+    #hyperlink2014_sym
+    #hyperlink2012_sym
+)
+DENSEGRAPHS=(
+    twitter_sym
+    com-orkut_sym
+    friendster_sym
+    soc-LiveJournal1_sym
+    eu-2015-host_sym
+    sd_arc_sym
+    enwiki-2023_sym
+    arabic_sym
+    uk-2002_sym
+    socfb-konect_sym
+    socfb-uci-uni_sym
+    hollywood_2009_sym
+    skitter_sym
+)
+SPARSEGRAPHS=(
+    planet_sym
+    europe_sym
+    indochina_sym
+    asia_sym
+    north-america_sym
+    us_sym
+    africa_sym
+    hugebubbles-00020_sym
+    RoadUSA_sym
+    hugetrace-00020_sym
+    Germany_sym
+    in_2004_sym
+)

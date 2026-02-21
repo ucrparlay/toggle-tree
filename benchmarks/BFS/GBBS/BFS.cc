@@ -33,6 +33,7 @@
 //     -s : indicate that the graph is symmetric
 
 #include "BFS.h"
+#include "verify.h"
 
 namespace gbbs {
 
@@ -70,7 +71,7 @@ double BFS_runner(Graph& G, commandLine P) {
     
     ttt /= 15;
 
-    //process_result(P.getArgument(0), ttt, parents, true, "03_BFS");
+    process_result(P.getArgument(0), ttt, parents, true, "../../benchmarks/BFS");
     return tt;
 }
 

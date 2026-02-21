@@ -7,7 +7,10 @@ package(
 cc_library(
     name = "BFS",
     hdrs = ["BFS.h"],
-    deps = ["@gbbs//gbbs",],
+    deps = [
+        "@gbbs//gbbs",
+        "@benchmark_utils//:utils",
+    ],
 )
 
 cc_binary(
