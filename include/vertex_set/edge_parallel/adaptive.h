@@ -1,5 +1,5 @@
 #pragma once
-#include "../scheduler/parlay/sequence.h"
+#include "../.scheduler/parlay/sequence.h"
 
 template <typename F>
 inline void adaptive_for(

@@ -3,7 +3,7 @@
 
 #include <atomic>
 
-#include "../../include/vertex_set/scheduler/parlay/io.h"
+#include "../../include/vertex_set/vertex_set.h"
 #include "sampler.h"
 #include "utils.h"
 

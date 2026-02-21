@@ -2,7 +2,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <climits>
-#include "../scheduler/parlay/sequence.h"
+#include "../.scheduler/parlay/sequence.h"
 
 struct Bitmap {
     size_t n;

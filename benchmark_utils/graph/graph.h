@@ -12,7 +12,7 @@
 #include <type_traits>
 #include <vector>
 
-#include "../../include/vertex_set/scheduler/parlay/io.h"
+#include "../../include/vertex_set/vertex_set.h"
 #include "utils.h"
 
 class Empty {};
