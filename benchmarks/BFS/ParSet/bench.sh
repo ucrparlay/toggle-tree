@@ -1,4 +1,4 @@
-source ../../.config.sh
+source ../../../benchmark_utils/config.sh
 make clean
 make
 for g in "${DENSEGRAPHS[@]}"; do

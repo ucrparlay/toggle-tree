@@ -143,7 +143,7 @@ void process_result(const char* filepath, double t, T& result, bool print = fals
     for (size_t i=0;i<result.size();i++) res_32[i] = result[i];
 
     uint32_t maxi = 0;
-    for (uint32_t i=0; i<res_32.size(); i++) if (res_32[i] > maxi) maxi = res_32[i];
+    for (uint32_t i=0; i<res_32.size(); i++) if (res_32[i] != UINT32_MAX && res_32[i] > maxi) maxi = res_32[i];
     if (print) std::cout << "### Maximum Res : " << maxi << "\n";
 
     std::string get_hash = GetHash(res_32);

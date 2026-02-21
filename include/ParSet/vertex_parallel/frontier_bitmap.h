@@ -13,8 +13,8 @@ public:
     inline bool is_frontier(size_t i) const noexcept { return frontier.is_true(i); }
     inline void insert(size_t i) noexcept { next.set(i); }
     inline void remove(size_t i) noexcept { next.clear(i); }
-    inline void try_insert(size_t i) noexcept { return next.try_set(i); }
-    inline void try_remove(size_t i) noexcept { return next.try_clear(i); }
+    inline bool try_insert(size_t i) noexcept { return next.try_set(i); }
+    inline bool try_remove(size_t i) noexcept { return next.try_clear(i); }
     inline bool advance() noexcept { std::swap(frontier, next); return !empty(); }
     inline void coarse_granularity() noexcept { frontier.set_fork_depth(4); next.set_fork_depth(4); }
     inline void fine_granularity() noexcept { frontier.set_fork_depth(5); next.set_fork_depth(4); }
