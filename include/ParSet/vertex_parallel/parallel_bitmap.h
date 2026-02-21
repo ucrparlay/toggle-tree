@@ -1,16 +1,21 @@
 #pragma once
 #include <cstdint>
 #include <cstdlib>
+#include <cstddef>
 #include <climits>
+#include <utility>
+#include <algorithm>
 #include "../.scheduler/parlay/sequence.h"
+
+namespace ParSet { namespace internal {
 
 template<bool Remove>
 struct ParallelBitmap {
     uint64_t n;
     int fork_depth;
     parlay::sequence<parlay::sequence<uint64_t>> bitmap;
-    inline uint64_t off(int i) { return 6*(6-i); } 
-    inline uint64_t idx(int i, uint64_t base) { return base >> off(i); } 
+    static constexpr uint64_t off(int i) noexcept { return 6*(6-i); } 
+    static constexpr uint64_t idx(int i, uint64_t base) noexcept { return base >> off(i); } 
     ParallelBitmap(size_t _n, bool init_value, uint64_t _fork_depth) : n(_n), fork_depth(_fork_depth) {
         bitmap = parlay::sequence<parlay::sequence<uint64_t>>(6);
         uint64_t length = n;
@@ -27,18 +32,18 @@ struct ParallelBitmap {
             }
         }
     }
-    inline bool exist_true() { return bitmap[0][0]; }
+    inline bool empty() const noexcept { return !bitmap[0][0]; }
     inline void set_fork_depth(int depth) { fork_depth = depth; }
-    inline bool is_true(size_t v) { return (bitmap[5][v>>6]>>(v&63)) & 1ULL; }
-    inline void mark_true(size_t v) {
+    inline bool is_true(size_t v) const noexcept { return (bitmap[5][v>>6]>>(v&63)) & 1ULL; }
+    inline void set(size_t v) noexcept {
         for (int i=5; i>=0; i--) { if (__atomic_fetch_or(&bitmap[i][v>>off(i)], (1ULL<<((v>>off(i+1)) & 63)), __ATOMIC_RELAXED)) return; }
     }
-    inline void mark_false(size_t v) {
+    inline void clear(size_t v) noexcept {
         for (int i=5;i>=0;i--) {
             if (__atomic_fetch_and(&bitmap[i][v >> off(i)], ~(1ULL << ((v >> off(i+1)) & 63)), __ATOMIC_RELAXED) & ~(1ULL << ((v >> off(i+1)) & 63))) return;
         }
     }
-    inline bool test_mark_true(size_t v){
+    inline bool try_set(size_t v) noexcept {
         uint64_t bit5 = 1ULL << (v & 63);
         if (bitmap[5][v>>6] & bit5) return false;
         uint64_t old5 = __atomic_fetch_or(&bitmap[5][v>>6], bit5, __ATOMIC_RELAXED);
@@ -49,7 +54,7 @@ struct ParallelBitmap {
         }
         return true;
     }
-    inline bool test_mark_false(size_t v){
+    inline bool try_clear(size_t v) noexcept {
         uint64_t bit5 = 1ULL << (v & 63);
         if (!(bitmap[5][v>>6] & bit5)) return false;
         uint64_t old5 = __atomic_fetch_and(&bitmap[5][v >> 6], ~bit5, __ATOMIC_RELAXED);
@@ -89,22 +94,8 @@ struct ParallelBitmap {
     }
     template <class F>
     inline void parallel_do(F&& f) {
-        if (!exist_true()) return;
+        if (empty()) return;
         visit_layer(0, 0, bitmap[0][0], f);
-    }
-    template <class Graph, class Source, class Cond, class Update>
-    void EdgeMapSparse(Graph& G, Source&&source, Cond&& cond, Update&& update) {
-        parallel_do([&](uint32_t s) {
-            source(s);
-            size_t start = G.offsets[s];
-            size_t end   = G.offsets[s + 1];
-            adaptive_for(start, end, [&](size_t j) { 
-                size_t d = G.edges[j].v;
-                if (cond(d)) { 
-                    update(d);
-                }
-            });
-        });
     }
 
     template<class F, class Combine>
@@ -142,7 +133,7 @@ struct ParallelBitmap {
 
     template<class F, class Combine>
     inline uint64_t reduce(F&& f, Combine&& combine){
-        if (!exist_true()) return 0;
+        if (empty()) return 0;
         return reduce_layer(0, 0, bitmap[0][0], f, combine);
     }
     inline uint64_t reduce_max(parlay::sequence<uint32_t>& array){
@@ -213,17 +204,17 @@ struct ParallelBitmap {
     }
     
     inline void merge_to(ParallelBitmap<false>& other) {
-        if (!exist_true()) return;
+        if (empty()) return;
         merge_layer(0, 0, bitmap[0][0], other);
     }
 
     template<class Other, class F>
     inline void pop(uint32_t k, Other& other, F&& f){
-        if (!k || !bitmap[0][0]) return;
+        if (!k || empty()) return;
         static thread_local uint64_t rnd = 0x12345678u;
         parlay::parallel_for(0,k,[&](int){
             while (true) {
-                if (!bitmap[0][0]) return;
+                if (empty()) return;
                 uint64_t base = 0, m = 0;
                 for(int layer=0; layer<=5; layer++){
                     m = __atomic_load_n(&bitmap[layer][idx(layer,base)], __ATOMIC_RELAXED);
@@ -233,19 +224,19 @@ struct ParallelBitmap {
                     base += ((__builtin_ctzll((m>>x)|(m<<((-x)&63)))+x) & 63)<<off(layer+1);
                 }
                 if (!m) continue;
-                if (test_mark_false(base)) { other.insert(base); f(base); return; }
+                if (try_clear(base)) { other.insert(base); f(base); return; }
             }
         });
     }
 
-    inline void pop64(uint32_t& k, parlay::sequence<uint32_t>& other){
-        if (!k || !bitmap[0][0]) return;
+    inline void pop64(uint32_t& k, parlay::sequence<uint32_t>& other) noexcept {
+        if (!k || empty()) return;
         if (k > 64) k = 64;
         static thread_local uint64_t rnd = 0x12345678u;
         uint32_t index = 0;
         parlay::parallel_for(0,k,[&](int){
             while (true) {
-                if (!bitmap[0][0]) return;
+                if (empty()) return;
                 uint64_t base = 0, m = 0;
                 for(int layer=0; layer<=5; layer++){
                     m = __atomic_load_n(&bitmap[layer][idx(layer,base)], __ATOMIC_RELAXED);
@@ -255,19 +246,12 @@ struct ParallelBitmap {
                     base += ((__builtin_ctzll((m>>x)|(m<<((-x)&63)))+x) & 63)<<off(layer+1);
                 }
                 if (!m) continue;
-                if (test_mark_false(base)) { other[__atomic_fetch_add(&index,1,__ATOMIC_RELAXED)] = base; return; }
+                if (try_clear(base)) { other[__atomic_fetch_add(&index,1,__ATOMIC_RELAXED)] = base; return; }
             }
         });
-        for (int i=0; i<index; i++) { mark_true(other[i]); }
         k = index;
-    }/*
-    inline void pop64(uint32_t& k, parlay::sequence<uint32_t>& other){
-        if (!k || !bitmap[0][0]) return;
-        k = 1;
-        for (int _i=0;_i<n;_i++) {
-            if (test_mark_false(_i)) { other[0] = _i; return; }
-            //if (is_true(_i)) { mark_false(_i); other[0] = _i; return; }
-        }
-    }*/
+    }
 
 };
+
+}} // namespace internal & ParSet

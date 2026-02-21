@@ -1,5 +1,13 @@
 #pragma once
+#include <cstdint>
+#include <cstdlib>
+#include <cstddef>
+#include <climits>
+#include <utility>
+#include <algorithm>
 #include "../.scheduler/parlay/sequence.h"
+
+namespace ParSet {
 
 template <typename F>
 inline void adaptive_for(
@@ -76,4 +84,4 @@ inline bool adaptive_exist(Graph& G, uint32_t s, size_t l, size_t r, F&& f) {
     return left || right;
 }
 
-
+} // namespace ParSet

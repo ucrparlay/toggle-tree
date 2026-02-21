@@ -1,5 +1,6 @@
 #include "BFS.h"
-#include "utils.h"
+#include "graph.h"
+#include "verify.h"
 
 #define Algorithm BFS
 int main(int argc, char** argv) {

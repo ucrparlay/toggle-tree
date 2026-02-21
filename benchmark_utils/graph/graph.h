@@ -12,7 +12,7 @@
 #include <type_traits>
 #include <vector>
 
-#include "vertex_set.h"
+#include <ParSet/ParSet.h>
 #include "utils.h"
 
 class Empty {};

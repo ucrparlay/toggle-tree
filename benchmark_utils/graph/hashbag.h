@@ -3,7 +3,7 @@
 
 #include <atomic>
 
-#include "vertex_set.h"
+#include <ParSet/ParSet.h>
 #include "sampler.h"
 #include "utils.h"
 
