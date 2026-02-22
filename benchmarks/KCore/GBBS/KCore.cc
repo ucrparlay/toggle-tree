@@ -21,51 +21,38 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include "BFS.h"
+#include "KCore.h"
 #include "verify.h"
 
 namespace gbbs {
-
 template <class Graph>
-double BFS_runner(Graph& G, commandLine P) {
+double KCore_runner(Graph& G, commandLine P) {
     std::cout << "==================================================================" << std::endl;
-    std::cout << "### Application: BFS" << std::endl;
-    std::cout << "### Graph: " << P.getArgument(0) << std::endl;
-    std::cout << "### Threads: " << num_workers() << std::endl;
-    std::cout << "### n: " << G.n << std::endl;
-    std::cout << "### m: " << G.m << std::endl;
+    std::string gname = extract_graph_name(P.getArgument(0));
+    std::cout << "### Graph: " << gname << std::endl;
+    size_t num_buckets = P.getOptionLongValue("-nb", 16);
 
     parlay::internal::timer t;
     t.start();
-    auto parents = BFS(G, 0);
-    parents = BFS(G, 100);
-    parents = BFS(G, 200);
-    parents = BFS(G, 300);
-    parents = BFS(G, 400);
-    double tt = t.stop();
-    std::cout << "Warmup: " << 0.2*tt << "\n";
-
+    auto result = KCore(G, num_buckets);
+    double tt = t.stop(); 
+    std::cout << "Warmup: " << tt << "\n"; 
 
     double ttt = 0;
-    
     for (int round = 0; round < 3; round++) {
-        for (int source = 0; source < 500; source += 100) {
-            t.start();
-            parents = BFS(G, source);
-            tt = t.stop();
-            std::cout << "Source " << source << "  Round " << round + 1 << " time = " << tt << " sec\n";
-            ttt += tt;
-        }
+        t.start();
+        result = KCore(G, num_buckets);
+        tt = t.stop();
+        std::cout << "Round " << round + 1 << " time = " << tt << " sec\n";
+        ttt += tt;
     }
-    
-    ttt /= 15;
+    ttt /= 3;
 
-    process_result(P.getArgument(0), ttt, parents, true, "../../benchmarks/BFS");
+    process_result(P.getArgument(0), ttt, result, true, "../../benchmarks/KCore");
     static std::ofstream null("/dev/null");
     std::cout.rdbuf(null.rdbuf());
-    return tt;
+    return ttt;
 }
-
 }  // namespace gbbs
 
-generate_main(gbbs::BFS_runner, false);
+generate_symmetric_main(gbbs::KCore_runner, false);

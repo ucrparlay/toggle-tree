@@ -21,19 +21,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// Usage:
-// numactl -i all ./MaximalIndependentSet -stats -rounds 4 -s
-// com-orkut.ungraph.txt_SJ
-// flags:
-//   required:
-//     -s : indicate that the graph is symmetric
-//   optional:
-//     -m : indicate that the graph should be mmap'd
-//     -c : indicate that the graph is compressed
-//     -rounds : the number of times to run the algorithm
-//     -stats : print the #ccs, and the #vertices in the largest cc
-//     -specfor : run the speculative_for based algorithm from pbbs
-
 #include "MIS.h"
 #include "verify.h"
 

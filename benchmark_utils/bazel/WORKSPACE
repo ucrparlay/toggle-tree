@@ -14,3 +14,6 @@ git_repository(
 local_repository(name = "benchmark_utils", path = "../../benchmark_utils/graph",)
 local_repository(name = "gbbs_bfs", path = "../../benchmarks/BFS/GBBS",)
 local_repository(name = "gbbs_mis", path = "../../benchmarks/MIS/GBBS",)
+local_repository(name = "gbbs_kcore", path = "../../benchmarks/KCore/GBBS",)
+local_repository(name = "gbbs_coloring", path = "../../benchmarks/Coloring/GBBS",)
+local_repository(name = "gbbs_coloring_round", path = "../../benchmarks/ColoringRound/GBBS",)
