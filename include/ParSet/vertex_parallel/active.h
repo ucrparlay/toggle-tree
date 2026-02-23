@@ -4,9 +4,7 @@
 namespace ParSet {
 
 struct Active {
-private:
     internal::ParallelBitmap active; 
-public:
     Active(size_t n, uint64_t fork_depth = 4) : active(n, true, fork_depth) {}
     Active(size_t n, bool init, uint64_t fork_depth) : active(n, init, fork_depth) {}
     inline bool empty() const noexcept { return active.empty(); }

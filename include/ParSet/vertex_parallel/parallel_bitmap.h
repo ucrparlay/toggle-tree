@@ -9,7 +9,6 @@
 
 namespace ParSet { namespace internal {
 
-
 struct ParallelBitmap {
     uint64_t n;
     int fork_depth;
@@ -239,6 +238,77 @@ struct ParallelBitmap {
         );
         pack_layer<Remove>(0, 0, bitmap[0][0], 0, out);
         return total;
+    }
+
+    template<class Graph, class Cond, class Update>
+    inline void edgemap(Graph& G, Cond&& cond, Update&& update) {
+        if (empty()) return;
+        uint64_t total = reduce<true>(
+            [&] (size_t s) { return G.offsets[s+1] - G.offsets[s]; },
+            [&] (uint64_t l, uint64_t r) { return l + r; }
+        );
+        if (!total) return;
+        const uint64_t block_size = 1024, num_blocks = (total + block_size - 1) / block_size;
+        parlay::parallel_for(0, num_blocks, [&](size_t block_idx) {
+            uint64_t L = block_idx * block_size, need = std::min(block_size, total - L), done = 0;
+            uint64_t B[6], M[6], offv = 0; uint32_t s = 0;
+
+            auto seek = [&](uint64_t k) {
+                uint64_t base = 0, mask = bitmap[0][0], rem = k;
+                for (int layer = 0; layer < 5; layer++) {
+                    uint64_t mm = mask;
+                    while (true) {
+                        uint64_t bit = mm & -mm;
+                        uint64_t child_base = base + (__builtin_ctzll(bit) << off(layer + 1));
+                        uint64_t w = augval[layer + 1][idx(layer + 1, child_base)];
+                        if (rem < w) { B[layer] = base; M[layer] = mm; base = child_base; mask = bitmap[layer + 1][idx(layer + 1, child_base)]; break; }
+                        rem -= w; mm ^= bit;
+                    }
+                }
+                B[5] = base;
+                uint64_t mm = mask;
+                while (true) {
+                    uint64_t bit = mm & -mm;
+                    uint64_t v = base + __builtin_ctzll(bit);
+                    uint64_t deg = G.offsets[v+1] - G.offsets[v];
+                    if (rem < deg) { M[5] = mm; s = (uint32_t)v; offv = rem; return; }
+                    rem -= deg; mm ^= bit;
+                }
+            };
+
+            auto next_vertex = [&]() -> bool {
+                M[5] &= M[5] - 1;
+                if (M[5]) { s = (uint32_t)(B[5] + __builtin_ctzll(M[5])); offv = 0; return true; }
+                for (int layer = 4; layer >= 0; layer--) {
+                    M[layer] &= M[layer] - 1;
+                    if (!M[layer]) continue;
+                    uint64_t child_base = B[layer] + (__builtin_ctzll(M[layer]) << off(layer + 1));
+                    for (int t = layer + 1; t <= 5; t++) {
+                        B[t] = child_base;
+                        uint64_t m = bitmap[t][idx(t, child_base)];
+                        M[t] = m;
+                        if (t == 5) break;
+                        child_base += (__builtin_ctzll(m) << off(t + 1));
+                    }
+                    s = (uint32_t)(B[5] + __builtin_ctzll(M[5])); offv = 0; return true;
+                }
+                return false;
+            };
+
+            seek(L);
+            while (done < need) {
+                uint64_t deg = G.offsets[s+1] - G.offsets[s];
+                uint64_t take = std::min(deg - offv, need - done);
+                uint64_t e0 = G.offsets[s] + offv;
+                for (uint64_t i = 0; i < take; i++) {
+                    uint32_t d = G.edges[e0 + i].v;
+                    if (cond(d)) update(s, d);
+                }
+                done += take; offv += take;
+                if (done == need) break;
+                if (offv == deg && !next_vertex()) break;
+            }
+        }, 1);
     }
 
     inline void merge_layer(int layer, uint64_t base, uint64_t mask, ParallelBitmap& other) {
