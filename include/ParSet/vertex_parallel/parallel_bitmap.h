@@ -230,7 +230,7 @@ struct ParallelBitmap {
         return out;
     }
     template<bool Remove, class Sequence>
-    inline size_t pack(Sequence& out) {
+    inline size_t pack_into(Sequence& out) {
         if (empty()) return 0;
         uint64_t total = reduce<true>(
             [&] (size_t) { return 1; },
