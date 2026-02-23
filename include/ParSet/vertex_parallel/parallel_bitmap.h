@@ -9,11 +9,12 @@
 
 namespace ParSet { namespace internal {
 
-template<bool Remove>
+
 struct ParallelBitmap {
     uint64_t n;
     int fork_depth;
     parlay::sequence<parlay::sequence<uint64_t>> bitmap;
+    parlay::sequence<parlay::sequence<uint64_t>> augval;
     static constexpr uint64_t off(int i) noexcept { return 6*(6-i); } 
     static constexpr uint64_t idx(int i, uint64_t base) noexcept { return base >> off(i); } 
     ParallelBitmap(size_t _n, bool init_value, uint64_t _fork_depth) : n(_n), fork_depth(_fork_depth) {
@@ -65,8 +66,9 @@ struct ParallelBitmap {
         }
         return true;
     }
-    template <class F>
-    inline void visit_layer(int layer, uint64_t base, uint64_t mask, F& f) {
+
+    template <bool Remove, class F>
+    inline void visit_layer(int layer, uint64_t base, uint64_t mask, F&& f) {
         if (layer >= fork_depth) {
             if (layer == 5) {
                 for (; mask != 0; mask &= mask - 1) {
@@ -76,99 +78,170 @@ struct ParallelBitmap {
             else {
                 for (; mask != 0; mask &= mask - 1) {
                     uint64_t child_base = base + (__builtin_ctzll(mask) << off(layer + 1));
-                    visit_layer(layer + 1, child_base, bitmap[layer + 1][idx(layer + 1, child_base)], f ); 
+                    visit_layer<Remove>(layer + 1, child_base, bitmap[layer + 1][idx(layer + 1, child_base)], f ); 
                 }
             }
             if constexpr (Remove) { bitmap[layer][idx(layer,base)] = 0; }
             return;
         }
         if ((mask ^ mask & -mask) == 0) {
-            visit_layer(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)), bitmap[layer + 1][idx(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)))],f );
+            visit_layer<Remove>(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)), bitmap[layer + 1][idx(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)))],f );
             if constexpr (Remove) bitmap[layer][idx(layer, base)] = 0;
             return;
         }
         parlay::parallel_do(
-            [&]() { visit_layer(layer, base, mask ^ mask & -mask, f); },
-            [&]() { visit_layer(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)), bitmap[layer + 1][idx(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)))], f ); }
+            [&]() { visit_layer<Remove>(layer, base, mask ^ mask & -mask, f); },
+            [&]() { visit_layer<Remove>(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)), bitmap[layer + 1][idx(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)))], f ); }
         );
     }
-    template <class F>
+    template <bool Remove, class F>
     inline void parallel_do(F&& f) {
         if (empty()) return;
-        visit_layer(0, 0, bitmap[0][0], f);
+        visit_layer<Remove>(0, 0, bitmap[0][0], f);
     }
 
-    template<class F, class Combine>
+    template<bool Write, class F, class Combine>
     inline uint64_t reduce_layer(int layer, uint64_t base, uint64_t mask, F&& f, Combine&& combine){
-        if (base >= n) return 0;
         if (layer >= 4){
+            uint64_t best = 0;
             if(layer == 5){
-                uint64_t best = 0;
                 for(; mask; mask &= mask-1){
                     uint64_t t = base+__builtin_ctzll(mask);
                     best = combine(best, f(t));
                 }
-                return best;
-            } else {
-                uint64_t best = 0;
+            } 
+            else {
                 for(; mask; mask &= mask-1){
                     uint64_t child_base = base + (__builtin_ctzll(mask)<<off(layer+1));
-                    auto r = reduce_layer(layer+1, child_base, bitmap[layer+1][idx(layer+1,child_base)], f, combine);
+                    auto r = reduce_layer<Write>(layer+1, child_base, bitmap[layer+1][idx(layer+1,child_base)], f, combine);
                     best = combine(best, r);
                 }
-                return best;
             }
+            if constexpr (Write) augval[layer][idx(layer, base)] = best;
+            return best;
         }
         uint64_t child_base=base+(__builtin_ctzll(mask&-mask)<<off(layer+1));
         if((mask^mask&-mask)==0){
-            return reduce_layer(layer+1, child_base, bitmap[layer+1][idx(layer+1,child_base)], f, combine);
+            if constexpr (Write) {
+                return augval[layer][idx(layer, base)] = reduce_layer<Write>(layer+1, child_base, bitmap[layer+1][idx(layer+1,child_base)], f, combine);
+            }
+            else{
+                return reduce_layer<Write>(layer+1, child_base, bitmap[layer+1][idx(layer+1,child_base)], f, combine);
+            }
         }
         uint64_t l, r;
         parlay::parallel_do(
-            [&](){ l = reduce_layer(layer, base, mask^mask&-mask, f, combine); },
-            [&](){ r = reduce_layer(layer+1, child_base, bitmap[layer+1][idx(layer+1,child_base)], f, combine); }
+            [&](){ l = reduce_layer<Write>(layer, base, mask^mask&-mask, f, combine); },
+            [&](){ r = reduce_layer<Write>(layer+1, child_base, bitmap[layer+1][idx(layer+1,child_base)], f, combine); }
         );
-        return combine(l, r);
+        if constexpr (Write) { return augval[layer][idx(layer, base)] = combine(l, r); }
+        else { return combine(l, r); }
     }
-
-    template<class F, class Combine>
+    template<bool Write, class F, class Combine>
     inline uint64_t reduce(F&& f, Combine&& combine){
         if (empty()) return 0;
-        return reduce_layer(0, 0, bitmap[0][0], f, combine);
+        if constexpr (Write) {
+            if (augval.size() == 0) {
+                augval = parlay::sequence<parlay::sequence<uint64_t>>(6);
+                for (int i = 5; i >= 0; i--) {
+                    augval[i] = parlay::sequence<uint64_t>(bitmap[i].size(), 0);
+                }
+            }
+        }
+        return reduce_layer<Write>(0, 0, bitmap[0][0], f, combine);
     }
-    inline uint64_t reduce_max(parlay::sequence<uint32_t>& array){
-        return reduce(
-            [&] (size_t i) { return array[i]; },
-            [&] (uint64_t l, uint64_t r) { return (r == 0 || l > r) ? l : r; }
+
+    template <class F, class Select>
+    inline void select_layer(int layer, uint64_t base, uint64_t mask, uint64_t best, F&& f, Select&& sel) {
+        if (layer >= 4) {
+            if (layer == 5) {
+                for (; mask != 0; mask &= mask - 1) {
+                    uint64_t i = base + __builtin_ctzll(mask);
+                    if (f(i) == best) sel(i);
+                }
+            }
+            else {
+                for (; mask != 0; mask &= mask - 1) {
+                    uint64_t child_base = base + (__builtin_ctzll(mask) << off(layer + 1));
+                    if (augval[layer+1][idx(layer+1, child_base)] == best)
+                    select_layer(layer + 1, child_base, bitmap[layer + 1][idx(layer + 1, child_base)], best, f, sel); 
+                }
+            }
+            return;
+        }
+        if ((mask ^ mask & -mask) == 0) {
+            if (augval[layer+1][idx(layer+1, base + (__builtin_ctzll(mask & -mask) << off(layer+1)))] == best)
+            select_layer(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)), bitmap[layer + 1][idx(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)))], best, f, sel);
+            return;
+        }
+        parlay::parallel_do(
+            [&]() { select_layer(layer, base, mask ^ mask & -mask, best, f, sel); },
+            [&]() { 
+                if (augval[layer+1][idx(layer+1, base + (__builtin_ctzll(mask & -mask) << off(layer+1)))] == best)
+                select_layer(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)), bitmap[layer + 1][idx(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)))], best, f, sel); 
+            }
         );
     }
-    inline uint64_t reduce_min(parlay::sequence<uint32_t>& array){
-        return reduce(
-            [&] (size_t i) { return array[i]; },
-            [&] (uint64_t l, uint64_t r) { return (l == 0 || l > r) ? r : l; }
+    template <class F, class Select>
+    inline void select(F&& f, Select&& sel) {
+        if (empty()) return;
+        uint64_t best = augval[0][0];
+        if (best == 0) return;
+        select_layer(0, 0, bitmap[0][0], best, f, sel);
+    }
+
+    template<bool Remove, class Sequence>
+    inline void pack_layer(int layer, uint64_t base, uint64_t mask, uint64_t offset, Sequence& out) {
+        if (layer >= 4) {
+            if (layer == 5) {
+                for (; mask; mask &= mask - 1) {
+                    out[offset++] = base + __builtin_ctzll(mask);
+                }
+            }
+            else {
+                for (; mask; mask &= mask - 1) {
+                    uint64_t child_base = base + (__builtin_ctzll(mask) << off(layer + 1));
+                    pack_layer<Remove>(layer + 1, child_base, bitmap[layer + 1][idx(layer + 1, child_base)], offset, out);
+                    offset += augval[layer + 1][idx(layer + 1, child_base)];
+                }
+            }
+            if constexpr (Remove) { bitmap[layer][idx(layer,base)] = 0; }
+            return;
+        }
+        uint64_t child_base = base + (__builtin_ctzll(mask & -mask) << off(layer + 1));
+        if ((mask ^ (mask & -mask)) == 0) {
+            pack_layer<Remove>(layer + 1, child_base, bitmap[layer + 1][idx(layer + 1, child_base)], offset, out);
+            if constexpr (Remove) { bitmap[layer][idx(layer,base)] = 0; }
+            return;
+        }
+        parlay::parallel_do(
+            [&]() { pack_layer<Remove>(layer, base, mask ^ mask & -mask, offset + augval[layer + 1][idx(layer + 1, child_base)], out); },
+            [&]() { pack_layer<Remove>(layer + 1, child_base, bitmap[layer + 1][idx(layer + 1, child_base)], offset, out); }
         );
     }
-    inline uint64_t reduce_sum(parlay::sequence<uint32_t>& array){
-        return reduce(
-            [&] (size_t i) { return array[i]; },
-            [&] (uint64_t l, uint64_t r) { return (l + r); }
+    template<bool Remove>
+    inline parlay::sequence<uint32_t> pack() {
+        if (empty()) return {};
+        uint64_t total = reduce<true>(
+            [&] (size_t) { return 1; },
+            [&] (uint64_t l, uint64_t r) { return l + r; }
         );
+        parlay::sequence<uint32_t> out(total);
+        pack_layer<Remove>(0, 0, bitmap[0][0], 0, out);
+        return out;
     }
-    inline uint64_t reduce_vertex(){
-        return reduce(
-            [&] (size_t i) { return 1; },
-            [&] (uint64_t l, uint64_t r) { return (l + r); }
+    template<bool Remove, class Sequence>
+    inline size_t pack(Sequence& out) {
+        if (empty()) return 0;
+        uint64_t total = reduce<true>(
+            [&] (size_t) { return 1; },
+            [&] (uint64_t l, uint64_t r) { return l + r; }
         );
+        pack_layer<Remove>(0, 0, bitmap[0][0], 0, out);
+        return total;
     }
-    template <class Graph>
-    inline uint64_t reduce_edge(Graph& G){
-        return reduce(
-            [&] (size_t i) { return G.offsets[i+1] - G.offsets[i]; },
-            [&] (uint64_t l, uint64_t r) { return (l + r); }
-        );
-    }
-    
-    inline void merge_layer(int layer, uint64_t base, uint64_t mask, ParallelBitmap<false>& other) {
+
+    inline void merge_layer(int layer, uint64_t base, uint64_t mask, ParallelBitmap& other) {
         if (layer >= fork_depth - 1) {
             if (layer == 4) {
                 for (; mask != 0; mask &= mask - 1) {
@@ -202,8 +275,7 @@ struct ParallelBitmap {
             [&]() { merge_layer(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)), bitmap[layer + 1][idx(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)))], other); }
         );
     }
-    
-    inline void merge_to(ParallelBitmap<false>& other) {
+    inline void merge_to(ParallelBitmap& other) {
         if (empty()) return;
         merge_layer(0, 0, bitmap[0][0], other);
     }
