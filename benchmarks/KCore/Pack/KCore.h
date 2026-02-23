@@ -17,7 +17,7 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
     while (!active.empty()) {
         uint32_t k = active.reduce_min(D);
         active.parallel_do([&](uint32_t s) { 
-            if (D[s] <= k) { active.deactivate(s); frontier.insert(s);}
+            if (D[s] == k) { active.deactivate(s); frontier.insert(s);}
         });
         while (frontier.advance()) {
             size_t frt_size = frontier.pack(frt);
@@ -27,7 +27,7 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
                 ParSet::adaptive_for(G.offsets[s], G.offsets[s + 1], [&](size_t j) {
                     uint32_t d = G.edges[j].v;
                     if (active.is_active(d)) {
-                        if (__atomic_fetch_sub(&D[d], 1, __ATOMIC_RELAXED) <= k+1) {
+                        if (__atomic_fetch_sub(&D[d], 1, __ATOMIC_RELAXED) == k+1) {
                             active.deactivate(d); frontier.insert(d);
                         }
                     }
