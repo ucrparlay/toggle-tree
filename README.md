@@ -6,8 +6,13 @@ Requires: Linux (x86_64), GCC >= 9 with C++17 support.
 Supports graphs with up to 2³² vertices and 2⁶⁴ edges.
 
 ## Benchmarking
+### output of benchmarking
+After running an algorithm, three .csv files will be generated.
+"benchmarks.csv" contains time,
+"verify.csv" contains results of using the same hash function on both outputs of GBBS and ParSet. Comparing them verifies that GBBS and ParSet produce identical outputs (bit-for-bit). Code of hash function can be found in benchmark_utils/graph/verify.h.
+"max.csv" contains the max result of the output sequence, which indicates the number of rounds in BFS/Coloring/KCore.
 ### test ParSet environment
-For your convenience of reproducing experiments, this library does not rely on any outer repository to run benchmarks.
+For your convenience of reproducing experiments, no external dependencies are required for running benchmarks.
 Since parlaylib is vendored and small graphs are saved for testing, those simple commands will directly run all the algorithms: 
 ```bash
 cd benchmarks
