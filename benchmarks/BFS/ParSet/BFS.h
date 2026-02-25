@@ -8,37 +8,37 @@ parlay::sequence<uint32_t> BFS(Graph& G, size_t s=0) {
     auto active = ParSet::Active(n); 
     auto frontier = ParSet::Frontier(n);
     auto result = parlay::sequence<uint32_t>(n, UINT32_MAX); 
-    frontier.insert(s);
-    active.deactivate(s);
+    frontier.insert_next(s);
+    active.remove(s);
     for (uint32_t round = 0; ; round++) {
         if (mode == 0) {
-            if (!frontier.advance()) break;
+            if (!frontier.advance_to_next()) break;
             if (round < uint32_t(2 * std::log(n)) && frontier.reduce_edge(G) > 0.1 * G.m) {
-                frontier.parallel_do([&](uint32_t s) { result[s] = round; });
+                frontier.for_each([&](uint32_t s) { result[s] = round; });
                 mode = 1; continue;
             }
-            frontier.parallel_do([&](uint32_t s) { 
+            frontier.for_each([&](uint32_t s) { 
                 result[s] = round;
                 ParSet::adaptive_for(G.offsets[s], G.offsets[s+1], [&](uint32_t i) { 
                     uint32_t d = G.edges[i].v;
-                    if (active.try_deactivate(d)) { 
-                        frontier.insert(d);
+                    if (active.try_remove(d)) { 
+                        frontier.insert_next(d);
                     }
                 });
             });
         }
         else {  // Direction Optimization
-            active.parallel_do([&](size_t s) {
+            active.for_each([&](size_t s) {
                 for (size_t i = G.offsets[s]; i < G.offsets[s+1]; i++) { 
                     uint32_t d = G.edges[i].v;
-                    if (!active.is_active(d)) { 
-                        frontier.insert(s); result[s] = round;
+                    if (!active.contains(d)) { 
+                        frontier.insert_next(s); result[s] = round;
                         return;
                     }
                 }
             });
-            if (!frontier.advance()) break;
-            frontier.parallel_do([&](uint32_t s) { active.deactivate(s); });
+            if (!frontier.advance_to_next()) break;
+            frontier.for_each([&](uint32_t s) { active.remove(s); });
         }
     }
     return result;
