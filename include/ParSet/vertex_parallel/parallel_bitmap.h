@@ -313,7 +313,7 @@ struct ParallelBitmap {
         }, 1);
     }
 
-    inline void merge_to(int layer, uint64_t base, uint64_t mask, ParallelBitmap& other) {
+    inline void merge_into(int layer, uint64_t base, uint64_t mask, ParallelBitmap& other) {
         if (layer >= fork_depth - 1) {
             if (layer == 4) {
                 for (; mask != 0; mask &= mask - 1) {
@@ -331,25 +331,25 @@ struct ParallelBitmap {
             else {
                 for (; mask != 0; mask &= mask - 1) {
                     uint64_t child_base = base + (__builtin_ctzll(mask) << off(layer + 1));
-                    merge_to(layer + 1, child_base, bitmap[layer + 1][idx(layer + 1, child_base)], other); 
+                    merge_into(layer + 1, child_base, bitmap[layer + 1][idx(layer + 1, child_base)], other); 
                 }
             }
             bitmap[layer][idx(layer,base)] = 0;
             return;
         }
         if ((mask ^ mask & -mask) == 0) {
-            merge_to(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)), bitmap[layer + 1][idx(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)))], other);
+            merge_into(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)), bitmap[layer + 1][idx(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)))], other);
             bitmap[layer][idx(layer, base)] = 0;
             return;
         }
         parlay::parallel_do(
-            [&]() { merge_to(layer, base, mask ^ mask & -mask, other); },
-            [&]() { merge_to(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)), bitmap[layer + 1][idx(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)))], other); }
+            [&]() { merge_into(layer, base, mask ^ mask & -mask, other); },
+            [&]() { merge_into(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)), bitmap[layer + 1][idx(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)))], other); }
         );
     }
-    inline void merge_to(ParallelBitmap& other) {
+    inline void merge_into(ParallelBitmap& other) {
         if (empty()) return;
-        merge_to(0, 0, bitmap[0][0], other);
+        merge_into(0, 0, bitmap[0][0], other);
     }
 
     template<class F>

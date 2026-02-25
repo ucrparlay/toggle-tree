@@ -38,7 +38,7 @@ struct Frontier {
     }
 
     template<class Active>
-    void merge_to(Active& active) { frontier.merge_to(active.active); }
+    void merge_into(Active& active) { frontier.merge_into(active.active); }
 
 
     template<class Array>
