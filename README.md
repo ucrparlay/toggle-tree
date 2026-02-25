@@ -8,7 +8,7 @@ Supports graphs with up to 2³² vertices and 2⁶⁴ edges.
 
 ## Benchmarking
 
-### output of benchmarking
+### Output of Benchmarking
 
 After running an algorithm, three .csv files will be generated.
 
@@ -18,7 +18,7 @@ After running an algorithm, three .csv files will be generated.
 
 "max.csv" contains the max result of the output sequence, which indicates the number of rounds in BFS/Coloring/KCore.
 
-### test ParSet environment
+### Testing ParSet Environment
 
 For your convenience of reproducing experiments, no external dependencies are required for running benchmarks.
 
@@ -29,7 +29,7 @@ cd benchmarks
 ./test_parset.sh
 ```
 
-### test GBBS environment
+### Testing GBBS Environment
 
 Requires bazel 7.7.1
 
@@ -42,7 +42,7 @@ cd benchmarks
 ./test_gbbs.sh
 ```
 
-### benchmarking
+### Benchmarking
 
 To run all the benchmarks, 
 
