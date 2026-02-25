@@ -1,6 +1,6 @@
-# ParSet: High-Performance Concurrent Data Structures with Set Semantics
+# ParSet: Parallel Data Structures with Set Semantics
 
-Provides high-performance, composable, and parallel foundational data structures and operation interfaces for graph algorithms based on vertex subsets.
+Provides high-performance, composable parallel data structures with set semantics for shared-memory graph algorithms.
 
 Requires: Linux (x86_64), GCC >= 9 with C++17 support.
 Supports graphs with up to 2³² vertices and 2⁶⁴ edges.
