@@ -29,7 +29,7 @@ struct Frontier {
     template<bool Remove = true>
     inline parlay::sequence<uint32_t> pack() { return frontier.pack<Remove>(); }
     template<bool Remove = true, class Sequence>
-    inline size_t pack(Sequence& out) { return frontier.pack<Remove>(out); }
+    inline size_t pack_into(Sequence& out) { return frontier.pack_into<Remove>(out); }
 
     template<class Graph, class Source, class Cond, class Update>
     inline void edgemap(Graph& G, Source&& source, Cond&& cond, Update&& update) { 

@@ -1,6 +1,7 @@
 # To run benchmarks: 
-# Copy this file, change BIN_DIR to your diectory containing graphs, and rename it as "config.sh"
-BIN_DIR=/home/csgrads/xjian140/data/graphs/bin/
+# Copy this file, change BIN_DIR & ADJ_DIR to your diectory containing graphs, and rename it as "config.sh"
+BIN_DIR=/data/graphs/bin/
+ADJ_DIR=/data/graphs/pbbs/
 GRAPHS=(
     twitter_sym
     com-orkut_sym
@@ -59,4 +60,22 @@ SPARSEGRAPHS=(
     hugetrace-00020_sym
     Germany_sym
     in_2004_sym
+)
+WEIGHTEDGRAPHS=(
+    africa_sym_wgh
+    alaska_sym_wgh
+    asia_sym_wgh
+    CHEM_10_sym_wgh
+    com-orkut_sym_wgh18
+    Cosmo50_10_sym_wgh
+    europe_sym_wgh
+    friendster_sym_wgh18
+    GeoLifeNoScale_20_sym_wgh
+    Germany_sym_wgh
+    Household_10_sym_wgh
+    HT_10_sym_wgh
+    north-america_sym_wgh
+    planet_sym_wgh
+    RoadUSA_sym_wgh
+    us_sym_wgh
 )

@@ -204,7 +204,14 @@ class Graph {
       std::cout << "Warning: Weighted graph detected, but weights are not "
                    "supported yet"
                 << std::endl;
-      // TODO: Implement weight reading
+      weighted = true;
+for (size_t i = 0; i < m; i++) {
+if constexpr (std::is_integral_v<EdgeTy>) {
+file >> edges[i].w;
+} else if constexpr (std::is_floating_point_v<EdgeTy>) {
+file >> edges[i].w;
+}
+}
     }
 
     file.close();
@@ -357,7 +364,8 @@ class Graph {
     }
     std::string subfix = str_filename.substr(idx + 1);
     if (subfix == "adj") {
-      read_gbbs_adj_format(filename);
+      //read_gbbs_adj_format(filename);
+      read_pbbs_format(filename);
     } else if (subfix == "bin" &&
                str_filename.find("sym") != std::string::npos) {
       read_binary_format(filename);

@@ -28,7 +28,7 @@ struct Active {
     template<bool Remove = true>
     inline parlay::sequence<uint32_t> pack() { return active.pack<Remove>(); }
     template<bool Remove = true, class Sequence>
-    inline size_t pack(Sequence& out) { return active.pack<Remove>(out); }
+    inline size_t pack_into(Sequence& out) { return active.pack_into<Remove>(out); }
 
     template<class Array>
     inline uint64_t reduce_max(Array& array){ 
