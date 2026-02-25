@@ -15,10 +15,7 @@ struct Active {
     inline bool try_remove(size_t i) noexcept { return active.try_remove(i); }
 
     template <bool Remove = false, class F>
-    void for_each(F&& f) { 
-        if (active.empty()) return; 
-        active.for_each<Remove>(0, 0, active.get_root(), f); 
-    }
+    void for_each(F&& f) { active.for_each<Remove>(f); }
 
     template<bool Write = false, class F, class Combine>
     inline uint64_t reduce(F&& f, Combine&& combine){ return active.reduce<Write>(f, combine); }
@@ -30,6 +27,9 @@ struct Active {
     inline parlay::sequence<uint32_t> pack() { return active.pack<Remove>(); }
     template<bool Remove = true, class Sequence>
     inline size_t pack_into(Sequence& out) { return active.pack_into<Remove>(out); }
+
+    template<class F>
+    inline void pop(uint32_t k, F&& f) { active.pop(k, f); }
 
     template<class Array>
     inline uint64_t reduce_max(Array& array){ 
@@ -84,10 +84,6 @@ struct Active {
         select([&] (size_t i) { return array[i]; }, sel);
         return min_value;
     }
-
-    template<class Frontier, class F>
-    inline void pop(uint32_t k, Frontier& frontier, F&& f) { active.pop(k, frontier, f); }
-    inline void pop64(uint32_t& k, parlay::sequence<uint32_t>& array) { active.pop64(k, array); }
 };
 
 } // namespace ParSet

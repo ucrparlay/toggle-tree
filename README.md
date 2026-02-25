@@ -2,6 +2,9 @@
 
 Provides high-performance, composable, and parallel foundational data structures and operation interfaces for graph algorithms based on vertex subsets.
 
+Requires Linux, GCC >= 9 (C++17)
+Supports graphs with up to 2³² vertices and 2⁶⁴ edges.
+
 # Usage
 
 ## Compilation and Linking

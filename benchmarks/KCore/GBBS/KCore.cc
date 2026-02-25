@@ -30,7 +30,8 @@ double KCore_runner(Graph& G, commandLine P) {
     std::cout << "==================================================================" << std::endl;
     std::string gname = extract_graph_name(P.getArgument(0));
     std::cout << "### Graph: " << gname << std::endl;
-    size_t num_buckets = P.getOptionLongValue("-nb", 16);
+    std::cout << "### Threads: " << num_workers() << std::endl;
+    size_t num_buckets = 16;
 
     parlay::internal::timer t;
     t.start();

@@ -17,19 +17,19 @@ parlay::sequence<uint32_t> Coloring(Graph& G) {
                 return (deg_d > deg_s) || (deg_d == deg_s && perm[d] < perm_s); 
             }
         );
-        if (cnt == 0) { frontier.insert(s); }
+        if (cnt == 0) { frontier.insert_next(s); }
         return cnt;
     });
 
-    while (frontier.advance()) {
-        frontier.parallel_do([&](size_t s){
+    while (frontier.advance_to_next()) {
+        frontier.for_each([&](size_t s){
             uint32_t deg = G.offsets[s + 1] - G.offsets[s];
             if (deg == 0) { result[s] = 0; return; }
             uint8_t bits[deg] = {0};
             ParSet::adaptive_for(G.offsets[s], G.offsets[s + 1], [&](size_t j) {
                 uint32_t d = G.edges[j].v;
                 if (result[d] == UINT32_MAX) {
-                    if (__atomic_fetch_sub(&priorities[d], 1, __ATOMIC_RELAXED) == 1) { frontier.insert(d);  }
+                    if (__atomic_fetch_sub(&priorities[d], 1, __ATOMIC_RELAXED) == 1) { frontier.insert_next(d);  }
                 }
                 else {
                     if (result[d] < deg) { bits[result[d]] = 1; }

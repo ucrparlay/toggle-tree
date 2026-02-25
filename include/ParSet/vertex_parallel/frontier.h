@@ -10,23 +10,15 @@ struct Frontier {
 
     inline bool empty() const noexcept { return frontier.empty(); }
     inline bool contains(size_t i) const noexcept { return frontier.contains(i); }
-    inline void insert(size_t i) noexcept { frontier.insert(i); }
-    inline void remove(size_t i) noexcept { frontier.remove(i); }
-    inline bool try_insert(size_t i) noexcept { return frontier.try_insert(i); }
-    inline bool try_remove(size_t i) noexcept { return frontier.try_remove(i); }
-
-    inline bool advance_to_next() noexcept { std::swap(frontier, next); return !empty(); }
     inline bool contains_next(size_t i) const noexcept { return next.contains(i); }
     inline void insert_next(size_t i) noexcept { next.insert(i); }
     inline void remove_next(size_t i) noexcept { next.remove(i); }
     inline bool try_insert_next(size_t i) noexcept { return next.try_insert(i); }
     inline bool try_remove_next(size_t i) noexcept { return next.try_remove(i); }
-
+    inline bool advance_to_next() noexcept { std::swap(frontier, next); return !empty(); }
+    
     template <bool Remove = true, class F>
-    void for_each(F&& f) { 
-        if (frontier.empty()) return; 
-        frontier.for_each<Remove>(0, 0, frontier.get_root(), f); 
-    }
+    void for_each(F&& f) { frontier.for_each<Remove>(f); }
 
     template<bool Write = false, class F, class Combine>
     inline uint64_t reduce(F&& f, Combine&& combine){ return frontier.reduce<Write>(f, combine); }

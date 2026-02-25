@@ -31,6 +31,7 @@ double Coloring_runner(Graph& G, commandLine P) {
     std::cout << "==================================================================" << std::endl;
     std::string gname = extract_graph_name(P.getArgument(0));
     std::cout << "### Graph: " << gname << std::endl;
+    std::cout << "### Threads: " << num_workers() << std::endl;
 
     parlay::internal::timer t;
     t.start();

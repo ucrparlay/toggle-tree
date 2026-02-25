@@ -29,11 +29,9 @@ namespace gbbs {
 template <class Graph>
 double BFS_runner(Graph& G, commandLine P) {
     std::cout << "==================================================================" << std::endl;
-    std::cout << "### Application: BFS" << std::endl;
-    std::cout << "### Graph: " << P.getArgument(0) << std::endl;
+    std::string gname = extract_graph_name(P.getArgument(0));
+    std::cout << "### Graph: " << gname << std::endl;
     std::cout << "### Threads: " << num_workers() << std::endl;
-    std::cout << "### n: " << G.n << std::endl;
-    std::cout << "### m: " << G.m << std::endl;
 
     parlay::internal::timer t;
     t.start();

@@ -9,8 +9,8 @@ int main(int argc, char** argv) {
     const char* filepath = argv[1];
     G.read_graph(filepath);
     std::string graph_name = extract_graph_name(filepath);
-    std::cout << "====================================================================\n";
-    std::cout << "Graph:  " << graph_name << "\n";
+    std::cout << "==================================================================\n";
+    std::cout << "### Graph:  " << graph_name << "\n";
 
     parlay::internal::timer t; t.start();
     auto result = Algorithm(G,1);
