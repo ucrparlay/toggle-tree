@@ -6,19 +6,27 @@ namespace ParSet {
 struct Frontier {
     internal::ParallelBitmap frontier;
     internal::ParallelBitmap next;
-    Frontier(size_t n, uint64_t fork_depth = 5): frontier(n, false, fork_depth), next(n, false, fork_depth) {}
+    Frontier(size_t n, bool init = false, uint64_t fork_depth = 5): frontier(n, init, fork_depth), next(n, init, fork_depth) {}
+
     inline bool empty() const noexcept { return frontier.empty(); }
-    inline bool is_frontier(size_t i) const noexcept { return frontier.is_true(i); }
-    inline void insert(size_t i) noexcept { next.set(i); }
-    inline void remove(size_t i) noexcept { next.clear(i); }
-    inline bool try_insert(size_t i) noexcept { return next.try_set(i); }
-    inline bool try_remove(size_t i) noexcept { return next.try_clear(i); }
-    inline bool advance() noexcept { std::swap(frontier, next); return !empty(); }
-    inline void coarse_granularity() noexcept { frontier.set_fork_depth(4); next.set_fork_depth(4); }
-    inline void fine_granularity() noexcept { frontier.set_fork_depth(5); next.set_fork_depth(4); }
+    inline bool contains(size_t i) const noexcept { return frontier.contains(i); }
+    inline void insert(size_t i) noexcept { frontier.insert(i); }
+    inline void remove(size_t i) noexcept { frontier.remove(i); }
+    inline bool try_insert(size_t i) noexcept { return frontier.try_insert(i); }
+    inline bool try_remove(size_t i) noexcept { return frontier.try_remove(i); }
+
+    inline bool advance_to_next() noexcept { std::swap(frontier, next); return !empty(); }
+    inline bool contains_next(size_t i) const noexcept { return next.contains(i); }
+    inline void insert_next(size_t i) noexcept { next.insert(i); }
+    inline void remove_next(size_t i) noexcept { next.remove(i); }
+    inline bool try_insert_next(size_t i) noexcept { return next.try_insert(i); }
+    inline bool try_remove_next(size_t i) noexcept { return next.try_remove(i); }
 
     template <bool Remove = true, class F>
-    void parallel_do(F&& f) { frontier.parallel_do<Remove>(f); }
+    void for_each(F&& f) { 
+        if (frontier.empty()) return; 
+        frontier.for_each<Remove>(0, 0, frontier.get_root(), f); 
+    }
 
     template<bool Write = false, class F, class Combine>
     inline uint64_t reduce(F&& f, Combine&& combine){ return frontier.reduce<Write>(f, combine); }
@@ -34,7 +42,7 @@ struct Frontier {
     template<class Graph, class Source, class Cond, class Update>
     inline void edgemap(Graph& G, Source&& source, Cond&& cond, Update&& update) { 
         frontier.edgemap(G, cond, update); 
-        frontier.parallel_do<true>([&](size_t s){source(s);}); 
+        frontier.for_each<true>([&](size_t s){source(s);}); 
     }
 
     template<class Active>

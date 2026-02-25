@@ -5,19 +5,20 @@ namespace ParSet {
 
 struct Active {
     internal::ParallelBitmap active; 
-    Active(size_t n, uint64_t fork_depth = 4) : active(n, true, fork_depth) {}
-    Active(size_t n, bool init, uint64_t fork_depth) : active(n, init, fork_depth) {}
+    Active(size_t n, bool init = true, uint64_t fork_depth = 4) : active(n, init, fork_depth) {}
+
     inline bool empty() const noexcept { return active.empty(); }
-    inline bool is_active(size_t i) const noexcept { return active.is_true(i); }
-    inline void activate(size_t i) noexcept { active.set(i); }
-    inline void deactivate(size_t i) noexcept { active.clear(i); }
-    inline bool try_activate(size_t i) noexcept { return active.try_set(i); }
-    inline bool try_deactivate(size_t i) noexcept { return active.try_clear(i); }
-    inline void coarse_granularity() noexcept { active.set_fork_depth(4); }
-    inline void fine_granularity() noexcept { active.set_fork_depth(5); }
+    inline bool contains(size_t i) const noexcept { return active.contains(i); }
+    inline void insert(size_t i) noexcept { active.insert(i); }
+    inline void remove(size_t i) noexcept { active.remove(i); }
+    inline bool try_insert(size_t i) noexcept { return active.try_insert(i); }
+    inline bool try_remove(size_t i) noexcept { return active.try_remove(i); }
 
     template <bool Remove = false, class F>
-    void parallel_do(F&& f) { active.parallel_do<Remove>(f); }
+    void for_each(F&& f) { 
+        if (active.empty()) return; 
+        active.for_each<Remove>(0, 0, active.get_root(), f); 
+    }
 
     template<bool Write = false, class F, class Combine>
     inline uint64_t reduce(F&& f, Combine&& combine){ return active.reduce<Write>(f, combine); }

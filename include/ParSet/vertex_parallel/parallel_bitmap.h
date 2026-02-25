@@ -32,18 +32,20 @@ struct ParallelBitmap {
             }
         }
     }
-    inline bool empty() const noexcept { return !bitmap[0][0]; }
     inline void set_fork_depth(int depth) { fork_depth = depth; }
-    inline bool is_true(size_t v) const noexcept { return (bitmap[5][v>>6]>>(v&63)) & 1ULL; }
-    inline void set(size_t v) noexcept {
+    inline uint64_t get_root() { return bitmap[0][0]; }
+
+    inline bool empty() const noexcept { return !bitmap[0][0]; }
+    inline bool contains(size_t v) const noexcept { return (bitmap[5][v>>6]>>(v&63)) & 1ULL; }
+    inline void insert(size_t v) noexcept {
         for (int i=5; i>=0; i--) { if (__atomic_fetch_or(&bitmap[i][v>>off(i)], (1ULL<<((v>>off(i+1)) & 63)), __ATOMIC_RELAXED)) return; }
     }
-    inline void clear(size_t v) noexcept {
+    inline void remove(size_t v) noexcept {
         for (int i=5;i>=0;i--) {
             if (__atomic_fetch_and(&bitmap[i][v >> off(i)], ~(1ULL << ((v >> off(i+1)) & 63)), __ATOMIC_RELAXED) & ~(1ULL << ((v >> off(i+1)) & 63))) return;
         }
     }
-    inline bool try_set(size_t v) noexcept {
+    inline bool try_insert(size_t v) noexcept {
         uint64_t bit5 = 1ULL << (v & 63);
         if (bitmap[5][v>>6] & bit5) return false;
         uint64_t old5 = __atomic_fetch_or(&bitmap[5][v>>6], bit5, __ATOMIC_RELAXED);
@@ -54,7 +56,7 @@ struct ParallelBitmap {
         }
         return true;
     }
-    inline bool try_clear(size_t v) noexcept {
+    inline bool try_remove(size_t v) noexcept {
         uint64_t bit5 = 1ULL << (v & 63);
         if (!(bitmap[5][v>>6] & bit5)) return false;
         uint64_t old5 = __atomic_fetch_and(&bitmap[5][v >> 6], ~bit5, __ATOMIC_RELAXED);
@@ -67,7 +69,7 @@ struct ParallelBitmap {
     }
 
     template <bool Remove, class F>
-    inline void visit_layer(int layer, uint64_t base, uint64_t mask, F&& f) {
+    inline void for_each(int layer, uint64_t base, uint64_t mask, F&& f) {
         if (layer >= fork_depth) {
             if (layer == 5) {
                 for (; mask != 0; mask &= mask - 1) {
@@ -77,26 +79,21 @@ struct ParallelBitmap {
             else {
                 for (; mask != 0; mask &= mask - 1) {
                     uint64_t child_base = base + (__builtin_ctzll(mask) << off(layer + 1));
-                    visit_layer<Remove>(layer + 1, child_base, bitmap[layer + 1][idx(layer + 1, child_base)], f ); 
+                    for_each<Remove>(layer + 1, child_base, bitmap[layer + 1][idx(layer + 1, child_base)], f ); 
                 }
             }
             if constexpr (Remove) { bitmap[layer][idx(layer,base)] = 0; }
             return;
         }
         if ((mask ^ mask & -mask) == 0) {
-            visit_layer<Remove>(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)), bitmap[layer + 1][idx(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)))],f );
+            for_each<Remove>(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)), bitmap[layer + 1][idx(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)))],f );
             if constexpr (Remove) bitmap[layer][idx(layer, base)] = 0;
             return;
         }
         parlay::parallel_do(
-            [&]() { visit_layer<Remove>(layer, base, mask ^ mask & -mask, f); },
-            [&]() { visit_layer<Remove>(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)), bitmap[layer + 1][idx(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)))], f ); }
+            [&]() { for_each<Remove>(layer, base, mask ^ mask & -mask, f); },
+            [&]() { for_each<Remove>(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)), bitmap[layer + 1][idx(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)))], f ); }
         );
-    }
-    template <bool Remove, class F>
-    inline void parallel_do(F&& f) {
-        if (empty()) return;
-        visit_layer<Remove>(0, 0, bitmap[0][0], f);
     }
 
     template<bool Write, class F, class Combine>
@@ -366,7 +363,7 @@ struct ParallelBitmap {
                     base += ((__builtin_ctzll((m>>x)|(m<<((-x)&63)))+x) & 63)<<off(layer+1);
                 }
                 if (!m) continue;
-                if (try_clear(base)) { other.insert(base); f(base); return; }
+                if (try_remove(base)) { other.insert(base); f(base); return; }
             }
         });
     }
@@ -388,7 +385,7 @@ struct ParallelBitmap {
                     base += ((__builtin_ctzll((m>>x)|(m<<((-x)&63)))+x) & 63)<<off(layer+1);
                 }
                 if (!m) continue;
-                if (try_clear(base)) { other[__atomic_fetch_add(&index,1,__ATOMIC_RELAXED)] = base; return; }
+                if (try_remove(base)) { other[__atomic_fetch_add(&index,1,__ATOMIC_RELAXED)] = base; return; }
             }
         });
         k = index;
