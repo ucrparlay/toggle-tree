@@ -1,4 +1,4 @@
-# ParSet: Parallel Data Structures with Set Semantics
+# ParSet: Parallel Vertex Set
 
 Provides high-performance, composable parallel data structures with set semantics for shared-memory graph algorithms.
 
