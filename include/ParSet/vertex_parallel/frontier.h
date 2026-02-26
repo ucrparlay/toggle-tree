@@ -6,7 +6,7 @@ namespace ParSet {
 struct Frontier {
     internal::ParallelBitmap frontier;
     internal::ParallelBitmap next;
-    Frontier(size_t n, bool init = false): frontier(n, init), next(n, init) {}
+    Frontier(size_t n): frontier(n, false), next(n, false) {}
 
     inline bool empty() const noexcept { return frontier.empty(); }
     inline bool contains(size_t i) const noexcept { return frontier.contains(i); }
@@ -31,14 +31,8 @@ struct Frontier {
     template<bool Remove = true, class Sequence>
     inline size_t pack_into(Sequence& out) { return frontier.pack_into<Remove>(out); }
 
-    template<class Graph, class Source, class Cond, class Update>
-    inline void edgemap(Graph& G, Source&& source, Cond&& cond, Update&& update) { 
-        frontier.edgemap(G, cond, update); 
-        frontier.for_each<true>([&](size_t s){source(s);}); 
-    }
-
-    template<class Active>
-    void merge_into(Active& active) { frontier.merge_into(active.active); }
+    template<class F>
+    inline void pop(size_t k, F&& f) { frontier.pop(k, f); }
 
     template<class Array>
     inline uint64_t reduce_max(Array& array){ 
