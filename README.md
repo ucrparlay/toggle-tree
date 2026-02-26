@@ -4,7 +4,7 @@ Provides high-performance, composable parallel data structures with set semantic
 
 Requires: Linux (x86_64), GCC >= 9 with C++17 support.
 
-Supports graphs with up to 2³² vertices and 2⁶⁴ edges.
+Supports graphs with up to 2³⁶ vertices and 2⁶⁴ edges.
 
 ## Benchmarking
 

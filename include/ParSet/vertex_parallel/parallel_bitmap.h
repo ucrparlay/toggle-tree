@@ -10,13 +10,12 @@
 namespace ParSet { namespace internal {
 
 struct ParallelBitmap {
-    uint64_t n;
     int fork_depth;
     parlay::sequence<parlay::sequence<uint64_t>> bitmap;
     parlay::sequence<parlay::sequence<uint64_t>> augval;
     static constexpr uint64_t off(int i) noexcept { return 6*(6-i); } 
     static constexpr uint64_t idx(int i, uint64_t base) noexcept { return base >> off(i); } 
-    ParallelBitmap(size_t _n, bool init_value, uint64_t _fork_depth) : n(_n), fork_depth(_fork_depth) {
+    ParallelBitmap(size_t n, bool init_value, uint64_t _fork_depth) : fork_depth(_fork_depth) {
         bitmap = parlay::sequence<parlay::sequence<uint64_t>>(6);
         uint64_t length = n;
         if (init_value) {
@@ -220,14 +219,14 @@ struct ParallelBitmap {
             [&]() { pack<Remove>(layer + 1, child_base, bitmap[layer + 1][idx(layer + 1, child_base)], offset, out); }
         );
     }
-    template<bool Remove>
-    inline parlay::sequence<uint32_t> pack() {
+    template<bool Remove, class T>
+    inline parlay::sequence<T> pack() {
         if (empty()) return {};
         uint64_t total = reduce<true>(
             [&] (size_t) { return 1; },
             [&] (uint64_t l, uint64_t r) { return l + r; }
         );
-        parlay::sequence<uint32_t> out(total);
+        parlay::sequence<T> out(total);
         pack<Remove>(0, 0, bitmap[0][0], 0, out);
         return out;
     }
@@ -253,7 +252,7 @@ struct ParallelBitmap {
         const uint64_t block_size = 1024, num_blocks = (total + block_size - 1) / block_size;
         parlay::parallel_for(0, num_blocks, [&](size_t block_idx) {
             uint64_t L = block_idx * block_size, need = std::min(block_size, total - L), done = 0;
-            uint64_t B[6], M[6], offv = 0; uint32_t s = 0;
+            uint64_t B[6], M[6], offv = 0; size_t s = 0;
 
             auto seek = [&](uint64_t k) {
                 uint64_t base = 0, mask = bitmap[0][0], rem = k;
@@ -273,14 +272,14 @@ struct ParallelBitmap {
                     uint64_t bit = mm & -mm;
                     uint64_t v = base + __builtin_ctzll(bit);
                     uint64_t deg = G.offsets[v+1] - G.offsets[v];
-                    if (rem < deg) { M[5] = mm; s = (uint32_t)v; offv = rem; return; }
+                    if (rem < deg) { M[5] = mm; s = v; offv = rem; return; }
                     rem -= deg; mm ^= bit;
                 }
             };
 
             auto next_vertex = [&]() -> bool {
                 M[5] &= M[5] - 1;
-                if (M[5]) { s = (uint32_t)(B[5] + __builtin_ctzll(M[5])); offv = 0; return true; }
+                if (M[5]) { s = B[5] + __builtin_ctzll(M[5]); offv = 0; return true; }
                 for (int layer = 4; layer >= 0; layer--) {
                     M[layer] &= M[layer] - 1;
                     if (!M[layer]) continue;
@@ -292,7 +291,7 @@ struct ParallelBitmap {
                         if (t == 5) break;
                         child_base += (__builtin_ctzll(m) << off(t + 1));
                     }
-                    s = (uint32_t)(B[5] + __builtin_ctzll(M[5])); offv = 0; return true;
+                    s = B[5] + __builtin_ctzll(M[5]); offv = 0; return true;
                 }
                 return false;
             };
@@ -303,8 +302,7 @@ struct ParallelBitmap {
                 uint64_t take = std::min(deg - offv, need - done);
                 uint64_t e0 = G.offsets[s] + offv;
                 for (uint64_t i = 0; i < take; i++) {
-                    uint32_t d = G.edges[e0 + i].v;
-                    if (cond(d)) update(s, d);
+                    if (cond(G.edges[e0 + i].v)) update(s, G.edges[e0 + i].v);
                 }
                 done += take; offv += take;
                 if (done == need) break;
@@ -353,7 +351,7 @@ struct ParallelBitmap {
     }
 
     template<class F>
-    inline void pop(uint32_t k, F&& f){
+    inline void pop(size_t k, F&& f){
         if (!k || empty()) return;
         static thread_local uint64_t rnd = 0x12345678u;
         parlay::parallel_for(0,k,[&](int){

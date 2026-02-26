@@ -26,8 +26,8 @@ struct Frontier {
     template <class F, class Select>
     inline void select(F&& f, Select&& sel) { frontier.select(f, sel); }
 
-    template<bool Remove = true>
-    inline parlay::sequence<uint32_t> pack() { return frontier.pack<Remove>(); }
+    template<bool Remove = true, class T = uint32_t>
+    inline parlay::sequence<T> pack() { return frontier.pack<Remove, T>(); }
     template<bool Remove = true, class Sequence>
     inline size_t pack_into(Sequence& out) { return frontier.pack_into<Remove>(out); }
 
@@ -39,7 +39,6 @@ struct Frontier {
 
     template<class Active>
     void merge_into(Active& active) { frontier.merge_into(active.active); }
-
 
     template<class Array>
     inline uint64_t reduce_max(Array& array){ 

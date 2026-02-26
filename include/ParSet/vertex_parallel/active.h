@@ -23,13 +23,13 @@ struct Active {
     template <class F, class Select>
     inline void select(F&& f, Select&& sel) { active.select(f, sel); }
 
-    template<bool Remove = true>
-    inline parlay::sequence<uint32_t> pack() { return active.pack<Remove>(); }
+    template<bool Remove = true, class T = uint32_t>
+    inline parlay::sequence<T> pack() { return active.pack<Remove, T>(); }
     template<bool Remove = true, class Sequence>
     inline size_t pack_into(Sequence& out) { return active.pack_into<Remove>(out); }
 
     template<class F>
-    inline void pop(uint32_t k, F&& f) { active.pop(k, f); }
+    inline void pop(size_t k, F&& f) { active.pop(k, f); }
 
     template<class Array>
     inline uint64_t reduce_max(Array& array){ 
