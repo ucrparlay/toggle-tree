@@ -6,7 +6,7 @@ namespace ParSet {
 struct Frontier {
     internal::ParallelBitmap frontier;
     internal::ParallelBitmap next;
-    Frontier(size_t n, bool init = false, uint64_t fork_depth = 5): frontier(n, init, fork_depth), next(n, init, fork_depth) {}
+    Frontier(size_t n, bool init = false): frontier(n, init), next(n, init) {}
 
     inline bool empty() const noexcept { return frontier.empty(); }
     inline bool contains(size_t i) const noexcept { return frontier.contains(i); }
@@ -17,8 +17,8 @@ struct Frontier {
     inline bool try_remove_next(size_t i) noexcept { return next.try_remove(i); }
     inline bool advance_to_next() noexcept { std::swap(frontier, next); return !empty(); }
     
-    template <bool Remove = true, class F>
-    void for_each(F&& f) { frontier.for_each<Remove>(f); }
+    template <bool Remove = true, uint8_t ForkDepth = 5, class F>
+    void for_each(F&& f) { frontier.for_each<Remove, ForkDepth>(f); }
 
     template<bool Write = false, class F, class Combine>
     inline uint64_t reduce(F&& f, Combine&& combine){ return frontier.reduce<Write>(f, combine); }

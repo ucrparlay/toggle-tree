@@ -5,7 +5,7 @@ namespace ParSet {
 
 struct Active {
     internal::ParallelBitmap active; 
-    Active(size_t n, bool init = true, uint64_t fork_depth = 4) : active(n, init, fork_depth) {}
+    Active(size_t n, bool init = true) : active(n, init) {}
 
     inline bool empty() const noexcept { return active.empty(); }
     inline bool contains(size_t i) const noexcept { return active.contains(i); }
@@ -14,8 +14,8 @@ struct Active {
     inline bool try_insert(size_t i) noexcept { return active.try_insert(i); }
     inline bool try_remove(size_t i) noexcept { return active.try_remove(i); }
 
-    template <bool Remove = false, class F>
-    void for_each(F&& f) { active.for_each<Remove>(f); }
+    template <bool Remove = false, uint8_t ForkDepth = 4, class F>
+    void for_each(F&& f) { active.for_each<Remove, ForkDepth>(f); }
 
     template<bool Write = false, class F, class Combine>
     inline uint64_t reduce(F&& f, Combine&& combine){ return active.reduce<Write>(f, combine); }
