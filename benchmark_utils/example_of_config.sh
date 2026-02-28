@@ -28,9 +28,6 @@ GRAPHS=(
     Germany_sym
     in_2004_sym
     skitter_sym
-    #clueweb_sym
-    #hyperlink2014_sym
-    #hyperlink2012_sym
 )
 DENSEGRAPHS=(
     twitter_sym
@@ -42,15 +39,16 @@ DENSEGRAPHS=(
     enwiki-2023_sym
     arabic_sym
     uk-2002_sym
+    indochina_sym
     socfb-konect_sym
     socfb-uci-uni_sym
     hollywood_2009_sym
+    in_2004_sym
     skitter_sym
 )
 SPARSEGRAPHS=(
     planet_sym
     europe_sym
-    indochina_sym
     asia_sym
     north-america_sym
     us_sym
@@ -59,23 +57,18 @@ SPARSEGRAPHS=(
     RoadUSA_sym
     hugetrace-00020_sym
     Germany_sym
-    in_2004_sym
+)
+BIGGRAPHS=(
+    clueweb_sym
+    hyperlink2014_sym
+    hyperlink2012_sym
 )
 WEIGHTEDGRAPHS=(
-    africa_sym_wgh
-    alaska_sym_wgh
-    asia_sym_wgh
-    CHEM_10_sym_wgh
-    com-orkut_sym_wgh18
-    Cosmo50_10_sym_wgh
-    europe_sym_wgh
-    friendster_sym_wgh18
-    GeoLifeNoScale_20_sym_wgh
-    Germany_sym_wgh
-    Household_10_sym_wgh
-    HT_10_sym_wgh
-    north-america_sym_wgh
-    planet_sym_wgh
-    RoadUSA_sym_wgh
-    us_sym_wgh
+    alaska_sym_wgh.adj
+    HT_10_sym_wgh.adj
+    Household_10_sym_wgh.adj
+    CHEM_10_sym_wgh.adj
+    Germany_sym_wgh.adj
+    com-orkut_sym_wgh18.adj
+    RoadUSA_sym_wgh.adj
 )

@@ -25,9 +25,15 @@ parlay::sequence<uint32_t> Coloring(Graph& G) {
         frontier.for_each([&](size_t s){
             uint32_t deg = G.offsets[s + 1] - G.offsets[s];
             if (deg == 0) { result[s] = 0; return; }
-            uint8_t bits[deg] = {0};
-            ParSet::adaptive_for(G.offsets[s], G.offsets[s + 1], [&](size_t j) {
-                uint32_t d = G.edges[j].v;
+            uint8_t* bits;
+            uint8_t s_bits[deg <= (1 << 20) ? deg : 1] = {0};
+            if (deg > (1 << 20)) {
+                bits = new uint8_t[deg];
+                parlay::parallel_for(0, deg, [&](size_t i) { bits[i] = 0; }, 4096);
+            }
+            else { bits = s_bits; }
+            ParSet::adaptive_for(G.offsets[s], G.offsets[s + 1], [&](size_t i) {
+                uint32_t d = G.edges[i].v;
                 if (result[d] == UINT32_MAX) {
                     if (__atomic_fetch_sub(&priorities[d], 1, __ATOMIC_RELAXED) == 1) { frontier.insert_next(d);  }
                 }

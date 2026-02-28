@@ -24,7 +24,7 @@ parlay::sequence<bool> MIS(Graph& G) {
 
     while (frontier.advance_to_next()) {
         frontier.for_each([&](size_t s) {
-            ParSet::adaptive_for(G.offsets[s], G.offsets[s+1], [&](uint32_t i) { 
+            ParSet::adaptive_for(G.offsets[s], G.offsets[s+1], [&](size_t i) { 
                 uint32_t d = G.edges[i].v;
                 if (active.try_remove(d)) frontier.insert_next(d);
             });
@@ -32,7 +32,7 @@ parlay::sequence<bool> MIS(Graph& G) {
         frontier.advance_to_next();
         frontier.for_each([&](size_t s) {
             uint32_t perm_s = perm[s];
-            ParSet::adaptive_for(G.offsets[s], G.offsets[s+1], [&](uint32_t i) { 
+            ParSet::adaptive_for(G.offsets[s], G.offsets[s+1], [&](size_t i) { 
                 uint32_t d = G.edges[i].v;
                 if (active.contains(d) && perm_s < perm[d]) {
                     if (__atomic_fetch_sub(&priorities[d], 1, __ATOMIC_RELAXED) == 1) {
