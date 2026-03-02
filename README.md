@@ -2,7 +2,7 @@
 
 Provides high-performance, composable parallel data structures with set semantics for shared-memory graph algorithms.
 
-Requires: Linux (x86_64), GCC >= 9 with C++17 support.
+Requires: Linux (x86_64), GCC >= 10.
 
 Supports graphs with up to 2³⁶ vertices and 2⁶⁴ edges.
 
@@ -12,7 +12,7 @@ Supports graphs with up to 2³⁶ vertices and 2⁶⁴ edges.
 
 After running an algorithm, three .csv files will be generated.
 
-"benchmarks.csv" contains time.
+"benchmark.csv" contains time.
 
 "verify.csv" contains results of using the same hash function on both outputs of GBBS and ParSet. Comparing them verifies if GBBS and ParSet produce identical outputs (bit-to-bit, hash collision rate less than 10^(-9)). Code of hash function can be found in benchmark_utils/graph/verify.h.
 

@@ -43,6 +43,7 @@ parlay::sequence<uint32_t> Coloring(Graph& G) {
             for (uint32_t i = 0; i < deg; ++i) {
                 if (bits[i] == 0) { chosen = i; break; }
             }
+            if(deg >= (1 << 20)) free(bits);
             result[s] = (chosen == UINT32_MAX) ? (deg + 1) : chosen;
         });
     }

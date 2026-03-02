@@ -64,11 +64,12 @@ BIGGRAPHS=(
     hyperlink2012_sym
 )
 WEIGHTEDGRAPHS=(
-    alaska_sym_wgh.adj
-    HT_10_sym_wgh.adj
-    Household_10_sym_wgh.adj
-    CHEM_10_sym_wgh.adj
-    Germany_sym_wgh.adj
-    com-orkut_sym_wgh18.adj
-    RoadUSA_sym_wgh.adj
+    hawaii_sym_wgh
+    alaska_sym_wgh
+    HT_10_sym_wgh
+    Household_10_sym_wgh
+    CHEM_10_sym_wgh
+    Germany_sym_wgh
+    com-orkut_sym_wgh18
+    RoadUSA_sym_wgh
 )
