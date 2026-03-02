@@ -60,3 +60,29 @@ After that, those simple commands will reproduce all the table reported in the p
 cd benchmarks
 ./bench_all.sh
 ```
+
+## Usage
+
+ParSet is a set, not a sequence. It allows you to consider directly how elements interact, and save the time of packing.
+
+The source code in active.h and frontier.h are very clear and easy to understand its usage, so only a few explanations are necessary here.
+
+### Active & Frontier
+ParSet provides two classes: Active & Frontier.
+Active contains one set, and its elements are not removed after visiting by default.
+On the contrary, Frontier contains two sets, enabling insertion for the next round. 
+Besides, Frontier's elements are by default removed after visiting.
+
+### Insert & Remove
+ParSet is a set, you can call insert on a same element for multiple times, and you will only see one element when you visit it.
+Do NOT call insert and remove on a same set within a same round! That is NOT supported by ParSet, and no parallel graph algorithm is found that requires this kind of operation.
+Frontier has two sets, so it is supported to call for_each on Frontier while calling insert_next, since they are operated on different sets.
+
+### For Each & Pack
+ParSet has good performance because it avoids packing. Pack is implemented only for special needs, while for_each is recommended to be used in common.
+
+### Reduce & Select
+You can provide a <True> flag, to let Reduction save its process on a augment tree.
+Taking advantage of the augment tree, visiting elements has contains min/max value is supported.
+It also enabled packing and edgemap, although both do not have better performance than for_each.
+Make sure you call Reduce before calling Select. Otherwise there will be no augment tree.

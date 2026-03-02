@@ -13,25 +13,25 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
         return G.offsets[s+1] - G.offsets[s]; 
     });
 
-    parlay::internal::timer t; double t1=0,t2=0,t3=0;
+    //parlay::internal::timer t; double t1=0,t2=0,t3=0;
     while (!active.empty()) {
         // uint32_t k = active.reduce_and_select_min(D, [&](uint32_t s) { active.deactivate(s); frontier.insert(s); });
 
-        t.start();
+        //t.start();
         uint32_t k = active.reduce<true>(
             [&](size_t s) { return D[s]; },
             [&](uint64_t l, uint64_t r) { return (l == 0 || l > r) ? r : l; }
         );
-        t1 += t.stop();
+        //t1 += t.stop();
 
-        t.start();
+        //t.start();
         active.select(
             [&](size_t s) { return D[s]; },
             [&](uint32_t s) { active.remove(s); frontier.insert_next(s); }
         );
-        t2 += t.stop();
+        //t2 += t.stop();
 
-        t.start();
+        //t.start();
         while (frontier.advance_to_next()) {
             frontier.for_each([&](uint32_t s) { 
                 result[s] = k;
@@ -45,11 +45,11 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
                 });
             });
         }
-        t3 += t.stop();
+        //t3 += t.stop();
     }
-    std::cerr << "t1 = " << t1 << "\n";
-    std::cerr << "t2 = " << t2 << "\n";
-    std::cerr << "t3 = " << t3 << "\n";
+    //std::cerr << "t1 = " << t1 << "\n";
+    //std::cerr << "t2 = " << t2 << "\n";
+    //std::cerr << "t3 = " << t3 << "\n";
     
     return result;
 }
