@@ -9,12 +9,11 @@ int main(int argc, char** argv) {
     const char* filepath = argv[1];
     G.read_graph(filepath); if (G.n == 0) { std::cerr << "Failed in reading graph.\n"; return 0; }
     std::string graph_name = extract_graph_name(filepath);
+    const char* dumppath = (argc == 2) ? "disabled" : argv[2];
     std::cout << "==================================================================\n";
     std::cout << "### Graph:  " << graph_name << "\n";
-    std::cout << "### Threads: " << parlay::num_workers();
-    const char* dumppath = (argc == 2) ? "disabled" : argv[2];
-    std::cerr << "dumppath: " << dumppath << "\n";
-
+    std::cout << "### Threads: " << parlay::num_workers() << "  Dump: " << dumppath << "\n";;
+    
     parlay::internal::timer t; t.start();
     auto result = Algorithm(G,0); 
     result = Algorithm(G,100); 
