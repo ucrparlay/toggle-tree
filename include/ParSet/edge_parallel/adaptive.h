@@ -13,17 +13,15 @@ template <typename F>
 inline void adaptive_for(
     size_t start,
     size_t end,
-    F&& f,
-    size_t threshold = 256,
-    size_t granularity = 128
+    F&& f
 ) {
-    if (end - start < threshold) {
+    if (end - start < 256) {
         for (size_t i = start; i < end; ++i) {
             f(i);
         }
     } 
     else {
-        parlay::parallel_for(start, end, std::forward<F>(f), granularity);
+        parlay::parallel_for(start, end, std::forward<F>(f), 128);
     }
 }
 
