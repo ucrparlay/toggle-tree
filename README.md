@@ -55,7 +55,7 @@ For the same input graph and deterministic tie-breaking, ParSet produces the exa
 ### Benchmarking
 
 ```bash
-[benchmark_utils/scripts]$ ./bitwise_verify.sh
+[benchmark_utils/scripts]$ ./bench_all.sh
 [benchmark_utils/scripts/BFS]$ cat verify.csv && echo "------" && cat benchmark.csv
 [benchmark_utils/scripts/Coloring]$ cat verify.csv && echo "------" && cat benchmark.csv
 [benchmark_utils/scripts/KCore]$ cat verify.csv && echo "------" && cat benchmark.csv
