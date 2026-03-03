@@ -14,7 +14,7 @@ Benchmarks in ParSet are designed to produce bit-for-bit identical output with t
 
 To make experiments easy to reproduce, no external dependencies are required for running benchmarks.
 
-Since parlaylib is vendored and small graphs are included, this command will directly run all the algorithms: 
+Since parlaylib is vendored and small graphs are included, this command will directly compile and test all the algorithms: 
 
 ```bash
 [benchmark_utils/scripts]$ ./test_parset.sh
@@ -26,7 +26,7 @@ Requires bazel 7.7.1.
 
 Bazel is used to build GBBS baselines. (has nothing to do with ParSet)
 
-All the scripts are well prepared, as long as you get "bazel 7.7.1" when you run "bazel --version", those simple commands will directly run all the baselines: 
+All the scripts are well prepared, as long as you get "bazel 7.7.1" when you run "bazel --version", those simple commands will directly compile and test all the baselines: 
 
 ```bash
 [benchmark_utils/scripts]$ ./test_gbbs.sh
