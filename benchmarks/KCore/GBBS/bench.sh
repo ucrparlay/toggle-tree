@@ -1,4 +1,4 @@
-source ../../../benchmark_utils/config.sh
+source ../../../benchmark_utils/scripts/config.sh
 cd ../../../benchmark_utils/bazel
 bazel build @gbbs_kcore//:KCore_main -c opt
 export PARLAY_NUM_THREADS=$(nproc)

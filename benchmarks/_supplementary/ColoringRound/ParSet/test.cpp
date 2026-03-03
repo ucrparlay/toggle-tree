@@ -26,6 +26,6 @@ int main(int argc, char** argv) {
     }
     ttt /= 3;
 
-    process_result(filepath, ttt, result, true);  
+    process_result("", filepath, ttt, result, true);  
     return 0;
 }

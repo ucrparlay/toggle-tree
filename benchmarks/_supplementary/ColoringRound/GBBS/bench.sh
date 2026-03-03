@@ -1,4 +1,4 @@
-source ../../../../benchmark_utils/config.sh
+source ../../../../benchmark_utils/scripts/config.sh
 cd ../../../../benchmark_utils/bazel
 bazel build @gbbs_coloring_round//:GraphColoring_main -c opt
 for g in "${DENSEGRAPHS[@]}"; do

@@ -49,7 +49,7 @@ double Coloring_runner(Graph& G, commandLine P) {
     }
     ttt /= 3;
 
-    process_result(P.getArgument(0), ttt, result, true, "../../benchmarks/_supplementary/ColoringRound");
+    process_result("", P.getArgument(0), ttt, result, true, "../../benchmarks/_supplementary/ColoringRound");
     static std::ofstream null("/dev/null");
     std::cout.rdbuf(null.rdbuf());
     return ttt;

@@ -1,4 +1,4 @@
-source ../../../benchmark_utils/config.sh
+source ../../../benchmark_utils/scripts/config.sh
 make clean
 make
 export PARLAY_NUM_THREADS=$(nproc)
