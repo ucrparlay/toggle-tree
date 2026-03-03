@@ -31,7 +31,9 @@ double BFS_runner(Graph& G, commandLine P) {
     std::cout << "==================================================================" << std::endl;
     std::string gname = extract_graph_name(P.getArgument(0));
     std::cout << "### Graph: " << gname << std::endl;
-    std::cout << "### Threads: " << num_workers() << std::endl;
+    std::cout << "### Threads: " << num_workers();
+    const char* dumppath = P.getOptionValue("-dump") == nullptr ? "disabled" : P.getOptionValue("-dump");
+    std::cout << "  Dump: " << dumppath << "\n";
 
     parlay::internal::timer t;
     t.start();
@@ -58,7 +60,7 @@ double BFS_runner(Graph& G, commandLine P) {
     
     ttt /= 15;
 
-    process_result(P.getArgument(0), ttt, parents, true, "../../benchmarks/BFS");
+    process_result(dumppath, P.getArgument(0), ttt, parents, true, "../../benchmarks/BFS");
     static std::ofstream null("/dev/null");
     std::cout.rdbuf(null.rdbuf());
     return tt;

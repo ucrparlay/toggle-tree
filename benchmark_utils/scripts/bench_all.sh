@@ -1,3 +1,5 @@
+cd ../../benchmarks
+
 rm BFS/*.csv
 rm Coloring/*.csv
 rm KCore/*.csv

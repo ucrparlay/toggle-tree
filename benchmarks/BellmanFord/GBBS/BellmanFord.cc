@@ -29,8 +29,9 @@ template <class Graph>
 double BellmanFord_runner(Graph& G, commandLine P) {
     std::cout << "==================================================================" << std::endl;
     std::string gname = extract_graph_name(P.getArgument(0));
+    const char* dumppath = P.getOptionValue("-dump") == nullptr ? "disabled" : P.getOptionValue("-dump");
     std::cout << "### Graph: " << gname << std::endl;
-    std::cout << "### Threads: " << num_workers() << std::endl;
+    std::cout << "### Threads: " << num_workers() << "  Dump: " << dumppath << "\n";
     
     parlay::internal::timer t;
     t.start();
@@ -49,7 +50,7 @@ double BellmanFord_runner(Graph& G, commandLine P) {
     
     ttt /= 3;
 
-    process_result(P.getArgument(0), ttt, result, true, "../../benchmarks/BellmanFord");
+    process_result(dumppath, P.getArgument(0), ttt, result, true, "../../benchmarks/BellmanFord");
     static std::ofstream null("/dev/null");
     std::cout.rdbuf(null.rdbuf());
     return tt;

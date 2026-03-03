@@ -1,3 +1,4 @@
+cd ../../benchmarks
 cd BFS/GBBS && ./test.sh && cd ../..
 cd Coloring/GBBS && ./test.sh && cd ../..
 cd KCore/GBBS && ./test.sh && cd ../..

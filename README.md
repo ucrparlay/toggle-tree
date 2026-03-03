@@ -8,7 +8,9 @@ Supports graphs with up to 2³⁶ vertices and 2⁶⁴ edges.
 
 ## Benchmarking
 
-Benchmarks in ParSet are designed to be label-consistent with the provided GBBS baselines: for the same input graph and deterministic tie-breaking, ParSet produces the exact same per-vertex output label array as GBBS (e.g., the same vertex receives the same BFS level, color id, k-core number, or distance).
+Benchmarks in ParSet are designed to have bit-to-bit identical output with the provided GBBS baselines.
+
+For the same input graph and deterministic tie-breaking, ParSet produces the exact same per-vertex output label array as GBBS (e.g., the same vertex receives the same BFS level, color id, k-core number, or distance). However, please note that their intermediate execution differs. This is expected: different abstraction levels naturally lead to different algorithmic implementations. ParSet is not a drop-in replacement for GBBS’s VertexSubset. Instead, ParSet uses a straightforward, natural implementation without aggressive, output-preserving optimizations intended to mimic GBBS.
 
 ### Output of Benchmarking
 
@@ -16,7 +18,7 @@ After running an algorithm, three .csv files will be generated.
 
 "benchmark.csv" contains time.
 
-"verify.csv" contains results of using the same hash function on both outputs of GBBS and ParSet. This is intended as a fast sanity check; it does not constitute a full element-wise proof on large graphs, since writing and comparing full outputs can be impractical at scale. Code of hash function can be found in benchmark_utils/graph/verify.h.
+"verify.csv" contains results of using the same hash function on both outputs of GBBS and ParSet. This is intended as a fast sanity check, since writing and comparing full outputs can be impractical at scale. Code of hash function can be found in benchmark_utils/graph/verify.h. Bitwise verification is also provided.
 
 "max.csv" contains the max result of the output sequence, which indicates the number of rounds in BFS/Coloring/KCore.
 
@@ -27,8 +29,7 @@ For your convenience of reproducing experiments, no external dependencies are re
 Since parlaylib is vendored and small graphs are saved for testing, those simple commands will directly run all the algorithms: 
 
 ```bash
-cd benchmarks
-./test_parset.sh
+[benchmark_utils/scripts]$ ./test_parset.sh
 ```
 
 ### Testing GBBS Environment
@@ -40,27 +41,39 @@ Bazel is used to build GBBS baselines. (has nothing to do with ParSet)
 All the scripts are well prepared, as long as you get "bazel 7.7.1" when you run "bazel --version", those simple commands will directly run all the baselines: 
 
 ```bash
-cd benchmarks
-./test_gbbs.sh
+[benchmark_utils/scripts]$ ./test_gbbs.sh
 ```
 
-### Benchmarking
+### Configure number of threads, directory of graphs and graphs to be benchmarked
 
 To run all the benchmarks, 
 
 Duplicate benchmark_utils/example_of_config.sh, rename it to "config.sh": 
 
 ```bash
-cp benchmark_utils/example_of_config.sh benchmark_utils/config.sh
+[benchmark_utils/scripts]$ cp example_of_config.sh config.sh
 ```
 
-Then configure your directory that contains graphs and configure what you are going to run inside it.
+Then configure number of threads, directory of graphs and graphs to be benchmarked inside it.
 
-After that, those simple commands will reproduce all the table reported in the paper:  
+### Bitwise Verification
+
+After successfully performed previous tests and configurations, you may test any benchmarked algorithm on any graph, to see if output of ParSet and GBBS are bit-to-bit identical.
 
 ```bash
-cd benchmarks
-./bench_all.sh
+[benchmark_utils/scripts]$ ./bitwise_verify.sh
+```
+
+To select a certain graph with a certain algorithm, please edit the first few lines of bitwise_verify.sh.
+
+### Benchmarking
+
+```bash
+[benchmark_utils/scripts]$ ./bitwise_verify.sh
+[benchmark_utils/scripts/BFS]$ cat verify.csv && echo "------" && cat benchmark.csv
+[benchmark_utils/scripts/Coloring]$ cat verify.csv && echo "------" && cat benchmark.csv
+[benchmark_utils/scripts/KCore]$ cat verify.csv && echo "------" && cat benchmark.csv
+[benchmark_utils/scripts/BellmanFord]$ cat verify.csv && echo "------" && cat benchmark.csv
 ```
 
 ## Usage

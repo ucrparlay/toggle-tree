@@ -1,5 +1,8 @@
 # To run benchmarks: 
-# Copy this file, change BIN_DIR & ADJ_DIR to your diectory containing graphs, and rename it as "config.sh"
+# Copy this file, rename it as "config.sh"
+# change BIN_DIR & ADJ_DIR to your diectory containing graphs, 
+# and configure PARLAY_NUM_THREADS as you wish.
+export PARLAY_NUM_THREADS=$(nproc)
 BIN_DIR=/data/graphs/bin/
 ADJ_DIR=/data/graphs/pbbs/
 GRAPHS=(

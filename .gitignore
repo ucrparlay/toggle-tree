@@ -2,3 +2,5 @@
 config.sh
 test
 *.csv
+DumpedGBBS.txt
+DumpedParSet.txt

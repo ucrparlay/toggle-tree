@@ -8,6 +8,7 @@
 #include <vector>
 #include <filesystem>
 #include <iostream>
+#include <fstream>
 static inline uint64_t mix64(uint64_t x) {
     x ^= x >> 33;
     x *= 0xff51afd7ed558ccdULL;
@@ -31,11 +32,6 @@ std::string GetHash(const parlay::sequence<uint32_t>& results) {
         hash32 *= 16777619u;
     }
     std::ostringstream oss;
-    /*
-    oss << std::hex << std::setfill('0')
-        << std::setw(8) << maxv
-        << std::setw(16) << mixed_sum
-        << std::setw(16) << hash64;*/
     uint32_t folded =
         static_cast<uint32_t>(maxv) ^
         static_cast<uint32_t>(mixed_sum) ^
@@ -134,7 +130,7 @@ inline void update_csv_cell(
 }
 
 template <class T>
-void process_result(const char* filepath, double t, T& result, bool print = false, std::string gbbs_path = "") {
+void process_result(const char* dumppath, const char* filepath, double t, T& result, bool print = false, std::string gbbs_path = "") {
     std::string graph_name = extract_graph_name(filepath);
 
     if (print) std::cout << "### Running Time: " << t << " sec\n";
@@ -158,5 +154,10 @@ void process_result(const char* filepath, double t, T& result, bool print = fals
         update_csv_cell(gbbs_path + "/max.csv",       graph_name, std::to_string(maxi), "GBBS");
         update_csv_cell(gbbs_path + "/benchmark.csv", graph_name, std::to_string(t), "GBBS");
         update_csv_cell(gbbs_path + "/verify.csv",    graph_name, get_hash, "GBBS");
+    }
+    if (dumppath != nullptr && dumppath != "disabled") {
+        std::ofstream out(dumppath, std::ios::out|std::ios::trunc);
+        for(size_t i=0;i<result.size();++i){ out<<result[i]<<","; }
+        out<<"\n";
     }
 }

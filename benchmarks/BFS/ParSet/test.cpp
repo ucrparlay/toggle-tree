@@ -11,7 +11,9 @@ int main(int argc, char** argv) {
     std::string graph_name = extract_graph_name(filepath);
     std::cout << "==================================================================\n";
     std::cout << "### Graph:  " << graph_name << "\n";
-    std::cout << "### Threads: " << parlay::num_workers() << std::endl;
+    std::cout << "### Threads: " << parlay::num_workers();
+    const char* dumppath = (argc == 2) ? "disabled" : argv[2];
+    std::cerr << "dumppath: " << dumppath << "\n";
 
     parlay::internal::timer t; t.start();
     auto result = Algorithm(G,0); 
@@ -33,7 +35,7 @@ int main(int argc, char** argv) {
  
     ttt /= 15;
 
-    process_result(filepath, ttt, result, true);  
+    process_result(dumppath, filepath, ttt, result, true);  
     return 0;
 }
 
