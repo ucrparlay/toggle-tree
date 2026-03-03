@@ -35,14 +35,14 @@ double KCore_runner(Graph& G, commandLine P) {
 
     parlay::internal::timer t;
     t.start();
-    auto result = KCore(G, num_buckets);
+    auto result = KCore(G);
     double tt = t.stop(); 
     std::cout << "Warmup: " << tt << "\n"; 
 
     double ttt = 0;
     for (int round = 0; round < 3; round++) {
         t.start();
-        result = KCore(G, num_buckets);
+        result = KCore(G);
         tt = t.stop();
         std::cout << "Round " << round + 1 << " time = " << tt << " sec\n";
         ttt += tt;
