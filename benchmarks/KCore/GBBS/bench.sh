@@ -1,7 +1,6 @@
 source ../../../benchmark_utils/scripts/config.sh
 cd ../../../benchmark_utils/bazel
 bazel build @gbbs_kcore//:KCore_main -c opt
-export PARLAY_NUM_THREADS=$(nproc)
 for g in "${DENSEGRAPHS[@]}"; do
     numactl -i all bazel-bin/external/gbbs_kcore/KCore_main -s -b "${BIN_DIR}${g}.bin"
 done
