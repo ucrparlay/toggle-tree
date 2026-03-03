@@ -8,13 +8,15 @@ Supports graphs with up to 2³⁶ vertices and 2⁶⁴ edges.
 
 ## Benchmarking
 
+Benchmarks in ParSet are designed to be label-consistent with the provided GBBS baselines: for the same input graph and deterministic tie-breaking, ParSet produces the exact same per-vertex output label array as GBBS (e.g., the same vertex receives the same BFS level, color id, k-core number, or distance).
+
 ### Output of Benchmarking
 
 After running an algorithm, three .csv files will be generated.
 
 "benchmark.csv" contains time.
 
-"verify.csv" contains results of using the same hash function on both outputs of GBBS and ParSet. Comparing them verifies if GBBS and ParSet produce identical outputs (bit-to-bit, hash collision rate less than 10^(-9)). Code of hash function can be found in benchmark_utils/graph/verify.h.
+"verify.csv" contains results of using the same hash function on both outputs of GBBS and ParSet. This is intended as a fast sanity check; it does not constitute a full element-wise proof on large graphs, since writing and comparing full outputs can be impractical at scale. Code of hash function can be found in benchmark_utils/graph/verify.h.
 
 "max.csv" contains the max result of the output sequence, which indicates the number of rounds in BFS/Coloring/KCore.
 
