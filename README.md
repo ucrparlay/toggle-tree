@@ -10,18 +10,6 @@ Supports graphs with up to 2³⁶ vertices and 2⁶⁴ edges.
 
 Benchmarks in ParSet are designed to produce bit-for-bit identical output with the GBBS baseline implementations.
 
-For the same input graph and deterministic tie-breaking, ParSet produces the exact same per-vertex output label array as GBBS (e.g., the same vertex receives the same BFS level, color id, k-core number, or distance). However, please note that their intermediate execution differs. This is expected: different abstraction levels naturally lead to different algorithmic implementations. ParSet is not a drop-in replacement for GBBS’s VertexSubset. Instead, ParSet uses a straightforward, natural implementation without aggressive, output-preserving optimizations intended to mimic GBBS.
-
-### Output of Benchmarking
-
-After running an algorithm, three `.csv` files will be generated.
-
-`benchmark.csv` contains timing results.
-
-`verify.csv` contains results of using the same hash function on both outputs of GBBS and ParSet. This is intended as a fast sanity check, since writing and comparing full outputs can be impractical at scale. The hash function implementation is in `benchmark_utils/graph/verify.h`. Bitwise verification is also provided elsewhere.
-
-`max.csv` contains the max result of the output sequence, which indicates the number of rounds in BFS/Coloring/KCore.
-
 ### Testing ParSet Environment
 
 To make experiments easy to reproduce, no external dependencies are required for running benchmarks.
@@ -46,10 +34,6 @@ All the scripts are well prepared, as long as you get "bazel 7.7.1" when you run
 
 ### Configure the number of threads, the graph directory, and the graphs to benchmark
 
-To run all the benchmarks, 
-
-Copy benchmark_utils/example_of_config.sh, rename it to `config.sh`: 
-
 ```bash
 [benchmark_utils/scripts]$ cp example_of_config.sh config.sh
 ```
@@ -66,6 +50,8 @@ After successfully performed previous tests and configurations, you may test any
 
 To select a certain graph with a certain algorithm, please edit the first few lines of `bitwise_verify.sh`.
 
+For the same input graph and deterministic tie-breaking, ParSet produces the exact same per-vertex output label array as GBBS (e.g., the same vertex receives the same BFS level, color id, k-core number, or distance). However, please note that their intermediate execution differs. This is expected: different abstraction levels naturally lead to different algorithmic implementations. ParSet is not a drop-in replacement for GBBS’s VertexSubset. Instead, ParSet uses a straightforward, natural implementation without aggressive, output-preserving optimizations intended to mimic GBBS.
+
 ### Benchmarking
 
 ```bash
@@ -75,6 +61,14 @@ To select a certain graph with a certain algorithm, please edit the first few li
 [benchmark_utils/scripts/KCore]$ cat verify.csv && echo "------" && cat benchmark.csv
 [benchmark_utils/scripts/BellmanFord]$ cat verify.csv && echo "------" && cat benchmark.csv
 ```
+
+After running benchmarks, three `.csv` files will be generated.
+
+`benchmark.csv` contains timing results.
+
+`verify.csv` contains results of using the same hash function on both outputs of GBBS and ParSet. This is intended as a fast sanity check, since writing and comparing full outputs can be impractical at scale. The hash function implementation is in `benchmark_utils/graph/verify.h`. Bitwise verification is also provided elsewhere.
+
+`max.csv` contains the max result of the output sequence, which indicates the number of rounds in BFS/Coloring/KCore.
 
 ## Usage
 
