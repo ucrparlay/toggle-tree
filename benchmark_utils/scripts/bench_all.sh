@@ -7,11 +7,11 @@ rm BellmanFord/*.csv
 
 cd BFS/ParSet && ./bench.sh && cd ../..
 cd Coloring/ParSet && ./bench.sh && cd ../..
-cd KCore/ParSet && ./bench.sh && cd ../..
+cd KCore/ParSetKCore && ./bench.sh && cd ../..
 
 cd BFS/GBBS && ./bench.sh && cd ../..
 cd Coloring/GBBS && ./bench.sh && cd ../..
-cd KCore/GBBS && ./bench.sh && cd ../..
+cd KCore/HashbagKCore && ./bench.sh && cd ../..
 
 cd BellmanFord/ParSet && ./bench.sh && cd ../..
 cd BellmanFord/GBBS && ./bench.sh && cd ../..
