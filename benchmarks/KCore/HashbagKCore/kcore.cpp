@@ -5,6 +5,8 @@
 #include <vector>
 
 #include "graph.h"
+#include "hashbag.h"
+#include "verify.h"
 #include "parlay/internal/get_time.h"
 #include "parlay/sequence.h"
 #include "utils.h"
@@ -112,7 +114,7 @@ void verifier(const Graph &G, const sequence<NodeId> &act_core) {
 }
 
 template <class Algo, class Graph>
-void run(Algo &algo, const Graph &G, bool verify) {
+void run(Algo &algo, const Graph &G, bool verify, const char *filepath) {
   double total_time = 0;
   using NodeId = typename Graph::NodeId;
   sequence<NodeId> coreness;
@@ -129,7 +131,6 @@ void run(Algo &algo, const Graph &G, bool verify) {
   }
   double average_time = total_time / NUM_ROUND;
   printf("Average time: %f\n", average_time);
-  // printf("Max coreness: %u\n", reduce(coreness, maxm<NodeId>()));
 
   if (verify) {
     printf("Running verifier...\n");
@@ -138,6 +139,8 @@ void run(Algo &algo, const Graph &G, bool verify) {
     t.stop();
     pal_verifier(G, coreness);
   }
+
+  process_result("disabled", filepath, average_time, coreness, true);
 
   ofstream ofs("kcore.tsv", ios_base::app);
   ofs << average_time << '\n';
@@ -186,6 +189,6 @@ int main(int argc, char *argv[]) {
          G.m, NUM_ROUND);
 
   KCore solver(G);
-  run(solver, G, verify);
+  run(solver, G, verify, input_path);
   return 0;
 }
