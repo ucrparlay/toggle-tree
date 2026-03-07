@@ -28,7 +28,6 @@ class KCore {
   using NodeId = typename Graph::NodeId;
   using EdgeId = typename Graph::EdgeId;
 
-  // tunable parameters
   static constexpr bool enable_sampling = true;
   static constexpr uint32_t log2_single_buckets = 3;
   static constexpr uint32_t num_intermediate_buckets = 6;
@@ -38,7 +37,6 @@ class KCore {
   static constexpr double bias_factor = 0.5;
   static constexpr double error_rate_tolerance = 0.0000000001;
 
-  // other parameters
   static constexpr uint32_t num_single_buckets = 1 << log2_single_buckets;
   static constexpr uint32_t bucket_mask = num_single_buckets - 1;
   static constexpr uint32_t stride = num_single_buckets
@@ -97,8 +95,7 @@ class KCore {
     }
   }
 
-  inline void move_bucket_or_frontier(NodeId u, NodeId d, NodeId base_k,
-                                      NodeId k) {
+  inline void move_bucket(NodeId u, NodeId d, NodeId base_k, NodeId k) {
     if (d < base_k || d > (base_k | (stride - 1))) {
       return;
     }
@@ -126,6 +123,14 @@ class KCore {
         counting_flag = true;
       }
       counting_bag.insert(v);
+    }
+  }
+
+  void fetch_and_add_vertex(NodeId v, NodeId base_k, NodeId k) {
+    auto [id, succeed] = fetch_and_add_bounded(&coreness[v], -1, k);
+    id--;
+    if (succeed) {
+      move_bucket(v, id, base_k, k);
     }
   }
 
@@ -174,43 +179,23 @@ class KCore {
     set_sampler(u, k);
   }
 
-  double check_sample_security(NodeId v, size_t k, double sample_rate) {
-    double error_probability_bound = 0;
-    if (coreness[v] * init_reduce_ratio * bias_factor < k) {
-      return 1;
-    } else {
-      int n_star = coreness[v] - k;
-      size_t num_hits = std::max((uint32_t)1, samplers[v].get_num_hits());
-      error_probability_bound =
-          std::exp(-1.0 * n_star * sample_rate + 2 * num_hits -
-                   1.0 * num_hits * num_hits / n_star / sample_rate);
-      return error_probability_bound;
-    }
-  }
-
-  // Process neighbors, updating degrees and frontier/buckets
-  void process_neighbors(NodeId u, NodeId base_k, NodeId k,
-                         bool &counting_flag) {
-    ParSet::adaptive_for(G.offsets[u], G.offsets[u + 1], [&](size_t es) {
+  void map_neighbors_parallel(NodeId u, NodeId base_k, NodeId k,
+                              bool &counting_flag) {
+    parallel_for(G.offsets[u], G.offsets[u + 1], [&](size_t es) {
       auto v = G.edges[es].v;
       if (coreness[v] > k) {
         if (enable_sampling && sample_mode[v]) {
           sample_vertex(u, v, counting_flag);
         } else {
-          auto [id, succeed] = fetch_and_add_bounded(&coreness[v], -1, k);
-          id--;
-          if (succeed) {
-            move_bucket_or_frontier(v, id, base_k, k);
-          }
+          fetch_and_add_vertex(v, base_k, k);
         }
       }
     });
   }
 
-  // Process neighbors without bucketing (single-bucket phase)
-  void process_neighbors_wo_bucketing(NodeId u, NodeId k,
-                                      bool &counting_flag) {
-    ParSet::adaptive_for(G.offsets[u], G.offsets[u + 1], [&](size_t es) {
+  void map_neighbors_parallel_wo_bucketing(NodeId u, NodeId k,
+                                           bool &counting_flag) {
+    parallel_for(G.offsets[u], G.offsets[u + 1], [&](size_t es) {
       auto v = G.edges[es].v;
       if (coreness[v] > k) {
         if (enable_sampling && sample_mode[v]) {
@@ -226,6 +211,20 @@ class KCore {
     });
   }
 
+  double check_sample_security(NodeId v, size_t k, double sample_rate) {
+    double error_probability_bound = 0;
+    if (coreness[v] * init_reduce_ratio * bias_factor < k) {
+      return 1;
+    } else {
+      int n_star = coreness[v] - k;
+      size_t num_hits = std::max((uint32_t)1, samplers[v].get_num_hits());
+      error_probability_bound =
+          std::exp(-1.0 * n_star * sample_rate + 2 * num_hits -
+                   1.0 * num_hits * num_hits / n_star / sample_rate);
+      return error_probability_bound;
+    }
+  }
+
   sequence<NodeId> kcore() {
     size_t n = G.n;
     size_t bucketing_pt = 16;
@@ -233,7 +232,6 @@ class KCore {
     size_t avg_deg = G.m / n;
     parallel_for(0, n, [&](size_t i) { remaining_vertices[i] = i; });
     bool contains_sampling_nodes = false;
-    // init
     parallel_for(0, n, [&](size_t i) {
       coreness[i] = G.offsets[i + 1] - G.offsets[i];
       if (enable_sampling &&
@@ -251,13 +249,13 @@ class KCore {
     internal::timer t_insert("insert", false);
     internal::timer t_dump("dump", false);
     internal::timer t_push("push", false);
-
     internal::timer t_pack("pack", false);
     internal::timer t_add("add", false);
     internal::timer t_check_n_count("check_n_count", false);
+    internal::timer t_rho_round("round", false);
     size_t num_rho = 0;
 
-    // process from 0 to 16 using a single bucket
+    // single-bucket phase (k < 16)
     size_t k = 0;
     if (avg_deg < bucketing_pt) {
       while (k < bucketing_pt) {
@@ -288,12 +286,12 @@ class KCore {
         while (peeling_frontier.advance_to_next()) {
           num_rho++;
           bool counting_flag = false;
-          peeling_frontier.for_each([&](uint32_t u) {
-            alive[u] = false;
-            if (max_core < coreness[u]) {
-              max_core = coreness[u];
+          peeling_frontier.for_each([&](uint32_t f) {
+            alive[f] = false;
+            if (max_core < coreness[f]) {
+              max_core = coreness[f];
             }
-            process_neighbors_wo_bucketing(u, k, counting_flag);
+            map_neighbors_parallel_wo_bucketing(f, k, counting_flag);
           });
           if (counting_flag) {
             t_check_n_count.start();
@@ -317,7 +315,7 @@ class KCore {
       }
     }
 
-    // remaining vertices using hierarchical buckets
+    // hierarchical bucket phase
     if (remaining_vertices.size() > 0) {
       for (NodeId base_k = 0;; base_k += stride) {
         if (remaining_vertices.size() == 0) {
@@ -350,7 +348,6 @@ class KCore {
               if ((k & mask) == 0) {
                 offset_k += num_single_buckets;
                 t_pack.start();
-
                 buckets[num_single_buckets + i].template for_each<true>(
                     [&](size_t u) {
                       add_to_bucket(u, coreness[u], base_k + offset_k);
@@ -362,7 +359,6 @@ class KCore {
           }
           t_dump.stop();
           t_push.start();
-          
           buckets[k & bucket_mask].template for_each<true>([&](size_t v) {
             if (coreness[v] == k) {
               peeling_frontier.insert_next(v);
@@ -371,12 +367,12 @@ class KCore {
           while (peeling_frontier.advance_to_next()) {
             num_rho++;
             bool counting_flag = false;
-            peeling_frontier.for_each([&](uint32_t u) {
-              alive[u] = false;
-              if (max_core < coreness[u]) {
-                max_core = coreness[u];
+            peeling_frontier.for_each([&](uint32_t f) {
+              alive[f] = false;
+              if (max_core < coreness[f]) {
+                max_core = coreness[f];
               }
-              process_neighbors(u, base_k + offset_k, k, counting_flag);
+              map_neighbors_parallel(f, base_k + offset_k, k, counting_flag);
             });
             if (counting_flag) {
               auto counting_vertices = counting_bag.pack<true, NodeId>();
@@ -388,7 +384,6 @@ class KCore {
                 t_check_n_count.stop();
               });
               t_check_n_count.stop();
-
               buckets[k & bucket_mask].template for_each<true>([&](size_t v) {
                 if (coreness[v] == k) {
                   peeling_frontier.insert_next(v);
