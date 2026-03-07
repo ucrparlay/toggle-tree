@@ -23,14 +23,12 @@ GRAPHS=(
     us_sym
     socfb-konect_sym
     socfb-uci-uni_sym
-    hollywood_2009_sym
     africa_sym
     hugebubbles-00020_sym
     RoadUSA_sym
     hugetrace-00020_sym
     Germany_sym
     in_2004_sym
-    skitter_sym
 )
 DENSEGRAPHS=(
     twitter_sym
@@ -45,9 +43,7 @@ DENSEGRAPHS=(
     indochina_sym
     socfb-konect_sym
     socfb-uci-uni_sym
-    hollywood_2009_sym
     in_2004_sym
-    skitter_sym
 )
 SPARSEGRAPHS=(
     planet_sym
