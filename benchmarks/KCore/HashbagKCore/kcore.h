@@ -1,10 +1,13 @@
 #include <set>
 
-#include "graph.h"
-#include "hashbag.h"
 #include "parlay/parallel.h"
 #include "parlay/primitives.h"
 #include "parlay/sequence.h"
+#include "parlay/io.h"
+#include "sampler.h"
+#include "graph.h"
+#include "hashbag.h"
+#include "utils.h"
 
 using namespace std;
 using namespace parlay;
