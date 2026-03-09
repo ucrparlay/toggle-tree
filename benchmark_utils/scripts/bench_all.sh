@@ -6,7 +6,9 @@ rm KCore/*.csv
 rm BellmanFord/*.csv
 
 cd BFS/ParSet && ./bench.sh && cd ../..
+cd BFS/Hashbag && ./bench.sh && cd ../..
 cd Coloring/ParSet && ./bench.sh && cd ../..
+cd Coloring/Hashbag && ./bench.sh && cd ../..
 cd KCore/ParSetKCore && ./bench.sh && cd ../..
 
 cd BFS/GBBS && ./bench.sh && cd ../..
