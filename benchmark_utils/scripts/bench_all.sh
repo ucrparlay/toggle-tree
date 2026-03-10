@@ -1,22 +1,24 @@
 cd ../../benchmarks
 
-rm BFS/*.csv
-rm Coloring/*.csv
-rm KCore/*.csv
-rm BellmanFord/*.csv
+rm -f BFS/*.csv
+rm -f Coloring/*.csv
+rm -f KCore/*.csv
+rm -f BellmanFord/*.csv
 
-cd BFS/ParSet && ./bench.sh && cd ../..
-cd BFS/Hashbag && ./bench.sh && cd ../..
-cd Coloring/ParSet && ./bench.sh && cd ../..
-cd Coloring/Hashbag && ./bench.sh && cd ../..
-cd KCore/ParSetKCore && ./bench.sh && cd ../..
+# cd BFS/ParSet && ./bench.sh && cd ../..
+# cd BFS/Hashbag && ./bench.sh && cd ../..
+# cd Coloring/ParSet && ./bench.sh && cd ../..
+# cd Coloring/Hashbag && ./bench.sh && cd ../..
+# cd KCore/ParSetKCore && bash ./bench.sh && cd ../..
+cd KCore/ParSetSampling && bash ./bench.sh && cd ../..
 
-cd BFS/GBBS && ./bench.sh && cd ../..
-cd Coloring/GBBS && ./bench.sh && cd ../..
-cd KCore/HashbagKCore && ./bench.sh && cd ../..
+# cd BFS/GBBS && ./bench.sh && cd ../..
+# cd Coloring/GBBS && ./bench.sh && cd ../..
+# cd KCore/HashbagKCore && bash ./bench.sh && cd ../..
+cd KCore/HashbagSampling && bash ./bench.sh && cd ../..
 
-cd BellmanFord/ParSet && ./bench.sh && cd ../..
-cd BellmanFord/GBBS && ./bench.sh && cd ../..
+# cd BellmanFord/ParSet && ./bench.sh && cd ../..
+# cd BellmanFord/GBBS && ./bench.sh && cd ../..
 
 #source ../benchmark_utils/config.sh
 #for g in "${BIGGRAPHS[@]}"; do

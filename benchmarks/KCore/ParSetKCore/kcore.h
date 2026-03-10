@@ -227,7 +227,7 @@ class KCore {
 
   sequence<NodeId> kcore() {
     size_t n = G.n;
-    size_t bucketing_pt = 16;
+    size_t bucketing_pt = INT_MAX;
     auto remaining_vertices = parlay::sequence<NodeId>::uninitialized(n);
     size_t avg_deg = G.m / n;
     parallel_for(0, n, [&](size_t i) { remaining_vertices[i] = i; });
@@ -295,9 +295,7 @@ class KCore {
           });
           if (counting_flag) {
             t_check_n_count.start();
-            auto counting_vertices = counting_bag.pack<true, NodeId>();
-            parallel_for(0, counting_vertices.size(), [&](size_t j) {
-              NodeId u = counting_vertices[j];
+            counting_bag.template for_each<true>([&](size_t u) {
               count_vertex_wo_bucketing(u, k);
             });
             t_check_n_count.stop();
@@ -375,10 +373,8 @@ class KCore {
               map_neighbors_parallel(f, base_k + offset_k, k, counting_flag);
             });
             if (counting_flag) {
-              auto counting_vertices = counting_bag.pack<true, NodeId>();
               t_check_n_count.start();
-              parallel_for(0, counting_vertices.size(), [&](size_t j) {
-                NodeId u = counting_vertices[j];
+              counting_bag.template for_each<true>([&](size_t u) {
                 t_check_n_count.start();
                 count_vertex(u, k, base_k + offset_k);
                 t_check_n_count.stop();

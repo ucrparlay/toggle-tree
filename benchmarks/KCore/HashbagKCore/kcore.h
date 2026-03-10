@@ -295,7 +295,7 @@ class KCore {
 
   sequence<NodeId> kcore() {
     size_t n = G.n;
-    size_t bucketing_pt = 16;
+    size_t bucketing_pt = INT_MAX;
     auto remaining_vertices = parlay::sequence<NodeId>::uninitialized(n);
     size_t avg_deg = G.m / n;
     parallel_for(0, n, [&](size_t i) { remaining_vertices[i] = i; });
