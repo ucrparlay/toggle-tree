@@ -1,8 +1,9 @@
 #pragma once
 
+#include <ParSet/ParSet.h>
+
 #include <cmath>
 
-#include <ParSet/ParSet.h>
 #include "hashbag.h"
 
 template <class Graph>
@@ -20,12 +21,13 @@ parlay::sequence<uint32_t> BFS(Graph& G, size_t s = 0) {
   active.remove(s);
   for (uint32_t round = 0;; round++) {
     if (mode == 0 || mode == 2) {
-      size_t frontier_size = frontier->pack_into(parlay::make_slice(frontier_vertices));
+      size_t frontier_size =
+          frontier->pack_into(parlay::make_slice(frontier_vertices));
       if (!frontier_size) break;
 
       if (mode == 0 && round < uint32_t(2 * std::log(n))) {
-        size_t frontier_edges = parlay::reduce(parlay::delayed_seq<size_t>(
-            frontier_size, [&](size_t i) {
+        size_t frontier_edges = parlay::reduce(
+            parlay::delayed_seq<size_t>(frontier_size, [&](size_t i) {
               uint32_t u = frontier_vertices[i];
               return G.offsets[u + 1] - G.offsets[u];
             }));
@@ -60,9 +62,10 @@ parlay::sequence<uint32_t> BFS(Graph& G, size_t s = 0) {
         }
       });
 
-      size_t frontier_size = next_frontier->pack_into(parlay::make_slice(frontier_vertices));
+      size_t frontier_size =
+          next_frontier->pack_into(parlay::make_slice(frontier_vertices));
+      // TODO: the switch logic is not good
       if (!frontier_size) break;
-
       if (frontier_size < (G.n >> 6)) {
         parlay::parallel_for(0, frontier_size, [&](size_t i) {
           uint32_t u = frontier_vertices[i];
