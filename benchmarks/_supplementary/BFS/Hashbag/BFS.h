@@ -11,18 +11,16 @@ parlay::sequence<uint32_t> BFS(Graph& G, size_t s = 0) {
   const size_t n = G.n;
   uint8_t mode = 0;
   auto active = ParSet::Active(n);
-  hashbag<uint32_t> frontier_a(n), frontier_b(n);
-  hashbag<uint32_t>* frontier = &frontier_a;
-  hashbag<uint32_t>* next_frontier = &frontier_b;
+  hashbag<uint32_t> frontier(n);
   auto frontier_vertices = parlay::sequence<uint32_t>::uninitialized(n);
   auto result = parlay::sequence<uint32_t>(n, UINT32_MAX);
 
-  frontier->insert(s);
+  frontier.insert(s);
   active.remove(s);
   for (uint32_t round = 0;; round++) {
     if (mode == 0 || mode == 2) {
       size_t frontier_size =
-          frontier->pack_into(parlay::make_slice(frontier_vertices));
+          frontier.pack_into(parlay::make_slice(frontier_vertices));
       if (!frontier_size) break;
 
       if (mode == 0 && round < uint32_t(2 * std::log(n))) {
@@ -46,30 +44,29 @@ parlay::sequence<uint32_t> BFS(Graph& G, size_t s = 0) {
         ParSet::adaptive_for(G.offsets[u], G.offsets[u + 1], [&](size_t j) {
           uint32_t v = G.edges[j].v;
           if (active.try_remove(v)) {
-            next_frontier->insert(v);
+            frontier.insert(v);
           }
         });
       });
-      std::swap(frontier, next_frontier);
     } else {
       active.for_each([&](size_t u) {
         for (size_t i = G.offsets[u]; i < G.offsets[u + 1]; i++) {
           uint32_t v = G.edges[i].v;
           if (!active.contains(v)) {
-            next_frontier->insert(u);
+            frontier.insert(u);
             return;
           }
         }
       });
 
       size_t frontier_size =
-          next_frontier->pack_into(parlay::make_slice(frontier_vertices));
+          frontier.pack_into(parlay::make_slice(frontier_vertices));
       // TODO: the switch logic is not good
       if (!frontier_size) break;
       if (frontier_size < (G.n >> 6)) {
         parlay::parallel_for(0, frontier_size, [&](size_t i) {
           uint32_t u = frontier_vertices[i];
-          frontier->insert(u);
+          frontier.insert(u);
           active.remove(u);
         });
         round--;
