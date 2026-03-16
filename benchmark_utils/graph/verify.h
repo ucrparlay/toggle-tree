@@ -130,7 +130,7 @@ inline void update_csv_cell(
 }
 
 template <class T>
-void process_result(const char* dumppath, const char* filepath, double t, T& result, bool print = false, std::string gbbs_path = "") {
+void process_result(const char* dumppath, const char* filepath, double t, T& result, bool print = false, std::string gbbs_path = "", std::string column_name = "") {
     std::string graph_name = extract_graph_name(filepath);
 
     if (print) std::cout << "### Running Time: " << t << " sec\n";
@@ -146,9 +146,9 @@ void process_result(const char* dumppath, const char* filepath, double t, T& res
     if (print) std::cout << "### Verify  Hash: " << get_hash << '\n';
 
     if (gbbs_path == ""){
-        update_csv_cell("../max.csv",       graph_name, std::to_string(maxi));
-        update_csv_cell("../benchmark.csv", graph_name, std::to_string(t));
-        update_csv_cell("../verify.csv",    graph_name, get_hash);
+        update_csv_cell("../max.csv",       graph_name, std::to_string(maxi), column_name);
+        update_csv_cell("../benchmark.csv", graph_name, std::to_string(t), column_name);
+        update_csv_cell("../verify.csv",    graph_name, get_hash, column_name);
     }
     else {
         update_csv_cell(gbbs_path + "/max.csv",       graph_name, std::to_string(maxi), "GBBS");
