@@ -4,9 +4,11 @@
 #include <cassert>
 #include <cmath>
 #include <cstdio>
+#include <fstream>
 #include <utility>
 
 #include <ParSet/ParSet.h>
+#include "hashbag.h"
 #include "parlay/primitives.h"
 #include "sampler.h"
 #include "utils.h"
@@ -37,8 +39,9 @@ class KCoreSampling {
 
   Graph& G;
   ParSet::Active active;
-  ParSet::Active counting_bag;
+  hashbag<NodeId> counting_bag;
   ParSet::Frontier frontier;
+  parlay::sequence<NodeId> frontier_buffer;
   parlay::sequence<NodeId> coreness;
   parlay::sequence<NodeId> result;
   parlay::sequence<bool> sample_mode;
@@ -46,7 +49,8 @@ class KCoreSampling {
 
  public:
   KCoreSampling(Graph& G)
-      : G(G), active(G.n), counting_bag(G.n, false), frontier(G.n) {
+      : G(G), active(G.n), counting_bag(G.n), frontier(G.n) {
+    frontier_buffer = parlay::sequence<NodeId>::uninitialized(G.n);
     coreness = parlay::sequence<NodeId>::uninitialized(G.n);
     result = parlay::sequence<NodeId>(G.n, 0);
     sample_mode = parlay::sequence<bool>::uninitialized(G.n);
@@ -149,36 +153,67 @@ class KCoreSampling {
       parlay::parallel_for(0, G.n, [&](size_t i) { set_sampler(i, 0); });
     }
 
+    parlay::internal::timer t_reduce_min("reduce_min", false);
+    parlay::internal::timer t_sample_check("sample_check", false);
+    parlay::internal::timer t_frontier_select("frontier_select", false);
+    parlay::internal::timer t_advance_pack("advance_pack", false);
+    parlay::internal::timer t_peel("peel", false);
+    parlay::internal::timer t_counting("counting", false);
+
+    std::ofstream csv("parset_peel.csv");
+    csv << "k,frontier_size,peel_time\n";
+
     while (!active.empty()) {
+      t_reduce_min.start();
       NodeId k = active.reduce_min(coreness);
+      t_reduce_min.stop();
       if (contains_sampling_nodes) {
+        t_sample_check.start();
         active.for_each([&](NodeId u) {
           if (sample_mode[u] &&
               check_sample_security(u, k) >= error_rate_tolerance) {
             count_vertex(u, k);
           }
         });
+        t_sample_check.stop();
       }
+      t_frontier_select.start();
       active.for_each([&](NodeId s) {
         if (coreness[s] == k) {
           active.remove(s);
           frontier.insert_next(s);
         }
       });
+      t_frontier_select.stop();
 
       while (frontier.advance_to_next()) {
+        // size_t frontier_size = frontier.reduce_vertex();
         bool counting_flag = false;
+        parlay::internal::timer t_peel("peel", false);
+        t_peel.start();
         frontier.for_each([&](NodeId u) {
           result[u] = k;
           map_neighbors(u, k, counting_flag);
         });
+        double peel_time = t_peel.stop();
+        csv << k << "," << 0 << "," << peel_time << "\n";
         if (counting_flag) {
-          counting_bag.template for_each<true>([&](NodeId u) {
-            count_vertex(u, k);
+          t_counting.start();
+          auto counting_vertices = counting_bag.pack();
+          parlay::parallel_for(0, counting_vertices.size(), [&](size_t i) {
+            count_vertex(counting_vertices[i], k);
           });
+          t_counting.stop();
         }
       }
     }
+
+    t_reduce_min.total();
+    t_sample_check.total();
+    t_frontier_select.total();
+    t_advance_pack.total();
+    t_peel.total();
+    t_counting.total();
 
     return result;
   }

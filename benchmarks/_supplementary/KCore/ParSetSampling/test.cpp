@@ -17,7 +17,7 @@ int main(int argc, char** argv) {
     std::cout << "Warmup: " << t.stop() << "\n";
 
     double ttt = 0;
-    for (int round = 0; round < 3; round++) {
+    for (int round = 0; round < 1; round++) {
         t.start();
         result = Algorithm(G);
         double tt = t.stop();

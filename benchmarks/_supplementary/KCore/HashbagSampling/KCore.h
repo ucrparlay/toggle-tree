@@ -4,6 +4,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstdio>
+#include <fstream>
 #include <utility>
 
 #include <ParSet/ParSet.h>
@@ -152,42 +153,73 @@ class KCoreSampling {
       parlay::parallel_for(0, G.n, [&](size_t i) { set_sampler(i, 0); });
     }
 
+    parlay::internal::timer t_reduce_min("reduce_min", false);
+    parlay::internal::timer t_sample_check("sample_check", false);
+    parlay::internal::timer t_frontier_select("frontier_select", false);
+    parlay::internal::timer t_advance_pack("advance_pack", false);
+    parlay::internal::timer t_peel("peel", false);
+    parlay::internal::timer t_counting("counting", false);
+
+    std::ofstream csv("hashbag_peel.csv");
+    csv << "k,frontier_size,peel_time\n";
+
     while (!active.empty()) {
+      t_reduce_min.start();
       NodeId k = active.reduce_min(coreness);
+      t_reduce_min.stop();
       if (contains_sampling_nodes) {
+        t_sample_check.start();
         active.for_each([&](NodeId u) {
           if (sample_mode[u] &&
               check_sample_security(u, k) >= error_rate_tolerance) {
             count_vertex(u, k);
           }
         });
+        t_sample_check.stop();
       }
+      t_frontier_select.start();
       active.for_each([&](NodeId u) {
         if (coreness[u] == k) {
           active.remove(u);
           frontier.insert(u);
         }
       });
+      t_frontier_select.stop();
 
       while (true) {
+        t_advance_pack.start();
         size_t frontier_size = frontier.pack_into(parlay::make_slice(frontier_buffer));
+        t_advance_pack.stop();
         if (!frontier_size) {
           break;
         }
         bool counting_flag = false;
+        parlay::internal::timer t_peel("peel", false);
+        t_peel.start();
         parlay::parallel_for(0, frontier_size, [&](size_t i) {
           NodeId u = frontier_buffer[i];
           result[u] = k;
           map_neighbors(u, k, counting_flag);
         });
+        double peel_time = t_peel.stop();
+        csv << k << "," << frontier_size << "," << peel_time << "\n";
         if (counting_flag) {
+          t_counting.start();
           auto counting_vertices = counting_bag.pack();
           parlay::parallel_for(0, counting_vertices.size(), [&](size_t i) {
             count_vertex(counting_vertices[i], k);
           });
+          t_counting.stop();
         }
       }
     }
+
+    t_reduce_min.total();
+    t_sample_check.total();
+    t_frontier_select.total();
+    t_advance_pack.total();
+    t_peel.total();
+    t_counting.total();
 
     return result;
   }
