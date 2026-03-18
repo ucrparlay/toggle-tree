@@ -64,46 +64,28 @@ struct ParallelBitmap {
         }
         return true;
     }
-    template <bool Remove, bool LightOp, class F>
+    
+    template <bool Remove, size_t Gran, class F>
     inline void for_each(int layer, uint64_t base, F&& f) {
         uint64_t mask = bitmap[layer][idx(layer, base)];
-        if constexpr(LightOp) {
-            if (layer == 5) {
-                parlay::parallel_for(0, __builtin_popcountll(mask), [&](int j) {
-                    f(base + (__builtin_ctzll(__builtin_ia32_pdep_di(1ULL << j, mask)) << off(layer + 1)));
-                }, 64);
-            } 
-            else if (layer == 4){
-                parlay::parallel_for(0, __builtin_popcountll(mask), [&](int j) {
-                    for_each<Remove, LightOp>(layer + 1, base + (__builtin_ctzll(__builtin_ia32_pdep_di(1ULL << j, mask)) << off(layer + 1)), f);
-                }, 8);
-            } 
-            else {
-                parlay::parallel_for(0, __builtin_popcountll(mask), [&](int j) {
-                    for_each<Remove, LightOp>(layer + 1, base + (__builtin_ctzll(__builtin_ia32_pdep_di(1ULL << j, mask)) << off(layer + 1)), f);
-                }, 1);
-            }
+        if (layer == 5) {
+            parlay::parallel_for(0, __builtin_popcountll(mask), [&](int j) {
+                f(base + (__builtin_ctzll(__builtin_ia32_pdep_di(1ULL << j, mask)) << off(layer + 1)));
+            }, Gran);
         }
         else {
-            if (layer == 5) {
-                parlay::parallel_for(0, __builtin_popcountll(mask), [&](int j) {
-                    f(base + (__builtin_ctzll(__builtin_ia32_pdep_di(1ULL << j, mask)) << off(layer + 1)));
-                }, 8);
-            }
-            else {
-                parlay::parallel_for(0, __builtin_popcountll(mask), [&](int j) {
-                    for_each<Remove, LightOp>(layer + 1, base + (__builtin_ctzll(__builtin_ia32_pdep_di(1ULL << j, mask)) << off(layer + 1)), f);
-                }, 1);
-            }
+            parlay::parallel_for(0, __builtin_popcountll(mask), [&](int j) {
+                for_each<Remove, Gran>(layer + 1, base + (__builtin_ctzll(__builtin_ia32_pdep_di(1ULL << j, mask)) << off(layer + 1)), f);
+            }, 1);
         }
         if constexpr (Remove) bitmap[layer][idx(layer, base)] = 0;
     }
-    template <bool Remove, bool LightOp, class F>
+    template <bool Remove, size_t Gran, class F>
     inline void for_each(F&& f) {
         if (empty()) return;
-        for_each<Remove, LightOp>(0, 0, f);
+        for_each<Remove, Gran>(0, 0, f);
         /*struct Node {int layer; uint64_t base;};
-        constexpr uint64_t CAPM = 255;
+        constexpr uint64_t CAPM = 127;
         Node nodes[CAPM+1], leaves[CAPM+1]; nodes[0] = {0, 0};
         size_t head = 0, tail = 1, leaves_n = 0;
         for (; head != tail && ((tail - head) & CAPM) + leaves_n < CAPM - 63; head = (head + 1) & CAPM) {
@@ -129,45 +111,40 @@ struct ParallelBitmap {
             head = (head + 1) & CAPM;
         }
         parlay::parallel_for(0, leaves_n, [&](size_t i) {
-            for_each<Remove, LightOp>(leaves[i].layer, leaves[i].base, f);
+            for_each<Remove, Gran>(leaves[i].layer, leaves[i].base, f);
         }, 1);*/
     }
-    /*
-    template <bool Remove, uint8_t ForkDepth, class F>
-    inline void for_each(int layer, uint64_t base, uint64_t mask, F&& f) {
-        if (layer >= ForkDepth) {
-            if (layer == 5) {
-                for (; mask != 0; mask &= mask - 1) {
-                    f(base + __builtin_ctzll(mask));
-                }
-            }
-            else {
-                for (; mask != 0; mask &= mask - 1) {
-                    uint64_t child_base = base + (__builtin_ctzll(mask) << off(layer + 1));
-                    for_each<Remove, ForkDepth>(layer + 1, child_base, bitmap[layer + 1][idx(layer + 1, child_base)], f ); 
-                }
-            }
-            if constexpr (Remove) { bitmap[layer][idx(layer,base)] = 0; }
-            return;
-        }
-        if ((mask ^ mask & -mask) == 0) {
-            for_each<Remove, ForkDepth>(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)), bitmap[layer + 1][idx(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)))],f );
-            if constexpr (Remove) bitmap[layer][idx(layer, base)] = 0;
-            return;
-        }
-        parlay::parallel_do(
-            [&]() { for_each<Remove, ForkDepth>(layer, base, mask ^ mask & -mask, f); },
-            [&]() { for_each<Remove, ForkDepth>(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)), bitmap[layer + 1][idx(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)))], f ); }
-        );
-    }
-    template <bool Remove, uint8_t ForkDepth, class F>
-    inline void for_each(F&& f) {
-        if (empty()) return;
-        for_each<Remove, ForkDepth>(0, 0, bitmap[0][0], f);
-    }
-    */
     
-    template<bool Write, class F, class Combine>
+    template <bool Write, uint64_t Identity=0, class F, class Combine>
+    inline uint64_t reduce(int layer, uint64_t base, F&& f, Combine&& combine) {
+        uint64_t mask = bitmap[layer][idx(layer, base)];
+        uint64_t best = Identity;
+        if (layer == 4) {
+            for(size_t i=0; i<__builtin_popcountll(mask); i++){
+                uint64_t childbase = base + (__builtin_ctzll(__builtin_ia32_pdep_di(1ULL << i, mask)) << off(5));
+                uint64_t m = bitmap[5][idx(5, childbase)];
+                uint64_t b = Identity;
+                for (size_t j=0; j<__builtin_popcountll(m); j++) {
+                    b = combine(b, f(childbase+__builtin_ctzll(__builtin_ia32_pdep_di(1ULL << j, m))));
+                }
+                if constexpr (Write) augval[5][idx(5, childbase)] = b;
+                best = combine(best, b);
+            }
+        }
+        else {
+            uint64_t bests[__builtin_popcountll(mask)];
+            parlay::parallel_for(0, __builtin_popcountll(mask), [&](size_t j) {
+                bests[j] = reduce<Write, Identity>(layer + 1, base + (__builtin_ctzll(__builtin_ia32_pdep_di(1ULL << j, mask)) << off(layer + 1)), f, combine);
+            }, 1);
+            for (size_t j=0; j<__builtin_popcountll(mask); j++) {
+                best = combine(best, bests[j]);
+            }
+        }
+        if constexpr (Write) augval[layer][idx(layer, base)] = best;
+        return best;
+    }
+    
+    /*template<bool Write, class F, class Combine>
     inline uint64_t reduce(int layer, uint64_t base, uint64_t mask, F&& f, Combine&& combine){
         if (layer >= 4){
             uint64_t best = 0;
@@ -202,7 +179,8 @@ struct ParallelBitmap {
         );
         if constexpr (Write) { return augval[layer][idx(layer, base)] = combine(l, r); }
         else { return combine(l, r); }
-    }
+    }*/
+    
     template<bool Write, class F, class Combine>
     inline uint64_t reduce(F&& f, Combine&& combine){
         if (empty()) return 0;
@@ -214,7 +192,7 @@ struct ParallelBitmap {
                 }
             }
         }
-        return reduce<Write>(0, 0, bitmap[0][0], f, combine);
+        return reduce<Write>(0, 0, f, combine);//bitmap[0][0], 
     }
 
     template <class F, class Select>
