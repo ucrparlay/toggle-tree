@@ -93,55 +93,56 @@ struct ParallelBitmap {
         );
     }
     
-    /*template <bool Remove, uint8_t ForkDepth, class F>
+    
+    template <bool Remove, uint8_t ForkDepth, class F>
+    inline void for_each(int layer, uint64_t base, F&& f) {
+        struct Node {int layer; uint64_t base;};
+        constexpr uint64_t CAPM = 255;
+        Node nodes[CAPM+1], leaves[CAPM+1]; nodes[0] = {layer, base};
+        size_t head = 0, tail = 1, leaves_n = 0;
+        for (; head != tail && ((tail - head) & CAPM) + leaves_n < CAPM - 63; head = (head + 1) & CAPM) {
+            if (nodes[head].layer == 4) { 
+                for (uint64_t mask = bitmap[nodes[head].layer][idx(nodes[head].layer, nodes[head].base)]; mask; mask &= mask - 1) {
+                    leaves[leaves_n].layer = nodes[head].layer + 1;
+                    leaves[leaves_n].base = nodes[head].base + (__builtin_ctzll(mask) << off(nodes[head].layer + 1));
+                    leaves_n++;
+                }
+                if constexpr(Remove) bitmap[nodes[head].layer][idx(nodes[head].layer, nodes[head].base)] = 0;
+            }
+            else {
+                for (uint64_t mask = bitmap[nodes[head].layer][idx(nodes[head].layer, nodes[head].base)]; mask; mask &= mask - 1) {
+                    nodes[tail].layer = nodes[head].layer + 1;
+                    nodes[tail].base = nodes[head].base + (__builtin_ctzll(mask) << off(nodes[head].layer + 1));
+                    tail = (tail + 1) & CAPM;
+                }
+                if constexpr(Remove) bitmap[nodes[head].layer][idx(nodes[head].layer, nodes[head].base)] = 0;
+            }
+        }
+        while (head != tail) {
+            leaves[leaves_n++] = nodes[head];
+            head = (head + 1) & CAPM;
+        }
+        parlay::parallel_for(0, leaves_n, [&](size_t i) {
+            if (leaves[i].layer == 5) {
+                for (uint64_t mask = bitmap[leaves[i].layer][idx(leaves[i].layer, leaves[i].base)]; mask; mask &= mask - 1) f(leaves[i].base + __builtin_ctzll(mask));
+                if constexpr (Remove) bitmap[leaves[i].layer][idx(leaves[i].layer, leaves[i].base)] = 0;
+            }
+            else {
+                for_each<Remove, ForkDepth>(leaves[i].layer, leaves[i].base, bitmap[leaves[i].layer][idx(leaves[i].layer, leaves[i].base)], f); //
+            }
+        }, 1);
+    }
+    template <bool Remove, uint8_t ForkDepth, class F>
+    inline void for_each(F&& f) {
+        if (empty()) return;
+        for_each<Remove, ForkDepth>(0, 0, f);
+    }/*
+    template <bool Remove, uint8_t ForkDepth, class F>
     inline void for_each(F&& f) {
         if (empty()) return;
         for_each<Remove, ForkDepth>(0, 0, bitmap[0][0], f);
     }*/
-    template <bool Remove, uint8_t ForkDepth, class F>
-    inline void for_each(F&& f) {
-        if (empty()) return;
-        struct Node{int layer; uint64_t base;};
-        constexpr size_t TARGET=1000;
-        std::vector<Node> nodes,leaves,to_remove;
-        nodes.reserve(TARGET*2); leaves.reserve(TARGET*2); to_remove.reserve(TARGET*2);
-        nodes.push_back({0,0});
-        size_t head=0;
-        while(head<nodes.size()&&nodes.size()-head+leaves.size()<TARGET){
-            auto [layer,base]=nodes[head++];
-            uint64_t mask=bitmap[layer][idx(layer,base)];
-            if(!mask) continue;
-            if(layer==5){ leaves.push_back({layer,base}); continue; }
-            if constexpr(Remove) to_remove.push_back({layer,base});
-            int nl=layer+1;
-            for(uint64_t m=mask;m;m&=m-1){
-                uint64_t child_base=base+(__builtin_ctzll(m)<<off(nl));
-                if(bitmap[nl][idx(nl,child_base)]){
-                    if(nl==5) leaves.push_back({nl,child_base});
-                    else nodes.push_back({nl,child_base});
-                }
-            }
-        }
-        if (head == nodes.size()) {
-            parlay::parallel_for(0,leaves.size(),[&](size_t i){
-                auto [layer,base]=leaves[i];
-                uint64_t mask=bitmap[layer][idx(layer,base)];
-                if(mask) for_each<Remove,ForkDepth>(layer,base,mask,f);
-            });
-        }
-        else {
-            for(;head<nodes.size();head++) leaves.push_back(nodes[head]);
-            parlay::parallel_for(0,leaves.size(),[&](size_t i){
-                auto [layer,base]=leaves[i];
-                uint64_t mask=bitmap[layer][idx(layer,base)];
-                if(mask) for_each<Remove,ForkDepth>(layer,base,mask,f);
-            }, 1);
-        }
-        if constexpr(Remove) {
-            for(size_t i=0;i<to_remove.size();i++) bitmap[to_remove[i].layer][idx(to_remove[i].layer,to_remove[i].base)]=0;
-        }
-    }
-
+    
     template<bool Write, class F, class Combine>
     inline uint64_t reduce(int layer, uint64_t base, uint64_t mask, F&& f, Combine&& combine){
         if (layer >= 4){
