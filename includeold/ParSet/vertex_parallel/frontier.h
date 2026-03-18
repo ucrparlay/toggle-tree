@@ -17,8 +17,8 @@ struct Frontier {
     inline bool try_remove_next(size_t i) noexcept { return next.try_remove(i); }
     inline bool advance_to_next() noexcept { std::swap(frontier, next); return !empty(); }
     
-    template <bool Remove = true, bool LightOp = false, class F>
-    void for_each(F&& f) { frontier.for_each<Remove, LightOp>(f); }
+    template <bool Remove = true, uint8_t ForkDepth = 5, class F>
+    void for_each(F&& f) { frontier.for_each<Remove, ForkDepth>(f); }
 
     template<bool Write = false, class F, class Combine>
     inline uint64_t reduce(F&& f, Combine&& combine){ return frontier.reduce<Write>(f, combine); }

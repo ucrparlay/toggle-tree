@@ -11,6 +11,10 @@ rm -f KCore/*.csv
 # cd KCore/HashbagKCore && bash ./bench.sh && cd ../..
 # cd KCore/ParSetKCore && bash ./bench.sh && cd ../..
 # cd KCore/HashbagSampling && bash ./bench.sh && cd ../..
+
+# cd KCore/Hashbag && bash ./bench.sh && cd ../..
+# cd KCore/HashbagKCore && bash ./bench.sh && cd ../..
+cd KCore/HashbagSampling && bash ./bench.sh && cd ../..
 cd KCore/ParSetSampling && bash ./bench.sh && cd ../..
 
 # cd ColoringRound/Hashbag && bash ./bench.sh && cd ../..
