@@ -1,25 +1,69 @@
 #pragma once
 #include <ParSet/ParSet.h>
 
+#include <cmath>
+
 template <class Graph>
-parlay::sequence<uint32_t> BFS(Graph& G, size_t s=0) {
-    const size_t n = G.n;
-    uint8_t mode = 0;
-    auto active = ParSet::Active(n); 
-    auto frontier = ParSet::Frontier(n);
-    auto result = parlay::sequence<uint32_t>(n, UINT32_MAX); 
-    frontier.insert_next(s);
-    active.remove(s);
-    for (uint32_t round = 0; frontier.advance_to_next(); round++) {
-        frontier.for_each([&](uint32_t s) { 
-            result[s] = round;
-            ParSet::adaptive_for(G.offsets[s], G.offsets[s+1], [&](size_t i) { 
-                uint32_t d = G.edges[i].v;
-                if (active.try_remove(d)) { 
-                    frontier.insert_next(d);
-                }
-            });
+parlay::sequence<uint32_t> BFS(Graph& G, size_t s = 0) {
+  const size_t n = G.n;
+  uint8_t mode = 0;
+  auto active = ParSet::Active(n);
+  auto frontier = ParSet::Frontier(n);
+  auto result = parlay::sequence<uint32_t>(n, UINT32_MAX);
+
+  frontier.insert_next(s);
+  active.remove(s);
+  for (uint32_t round = 0;; round++) {
+    if (mode == 0 || mode == 2) {
+      if (!frontier.advance_to_next()) break;
+
+      if (mode == 0 && round < uint32_t(2 * std::log(n))) {
+        size_t frontier_edges = frontier.reduce_edge(G);
+        if (frontier_edges > (G.m >> 3)) {
+          frontier.for_each([&](uint32_t s) { result[s] = round; });
+          mode = 1;
+          continue;
+        }
+      }
+
+      frontier.for_each([&](uint32_t s) {
+        result[s] = round;
+        ParSet::adaptive_for(G.offsets[s], G.offsets[s + 1], [&](size_t i) {
+          uint32_t d = G.edges[i].v;
+          if (active.try_remove(d)) {
+            frontier.insert_next(d);
+          }
         });
+      });
+    } else {
+      active.for_each([&](size_t u) {
+        for (size_t i = G.offsets[u]; i < G.offsets[u + 1]; i++) {
+          uint32_t v = G.edges[i].v;
+          if (!active.contains(v)) {
+            frontier.insert_next(u);
+            return;
+          }
+        }
+      });
+
+      if (!frontier.advance_to_next()) break;
+      size_t frontier_size = frontier.reduce_vertex();
+      // TODO: the switch logic is not good
+      if (frontier_size < (G.n >> 6)) {
+        frontier.for_each([&](uint32_t u) {
+          frontier.insert_next(u);
+          active.remove(u);
+        });
+        round--;
+        mode = 2;
+        continue;
+      }
+
+      frontier.for_each([&](uint32_t u) {
+        result[u] = round;
+        active.remove(u);
+      });
     }
-    return result;
+  }
+  return result;
 }
