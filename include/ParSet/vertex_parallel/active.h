@@ -19,7 +19,6 @@ struct Active {
 
     template<bool Write = false, uint64_t Identity = 0, class F, class Combine>
     inline uint64_t reduce(F&& f, Combine&& combine){ return active.reduce<Write, Identity>(f, combine); }
-    inline uint64_t reduce_size(){ return active.reduce_size<false>(); }
 
     template<bool Remove = true, class T = uint32_t>
     inline parlay::sequence<T> pack() { return active.pack<Remove, T>(); }
@@ -29,6 +28,7 @@ struct Active {
     template<class F>
     inline void pop(size_t k, F&& f) { active.pop(k, f); }
 
+    inline uint64_t reduce_vertex(){ return active.reduce_vertex<false>(); }
     template<class Array>
     inline uint64_t reduce_min(Array& array){ 
         return reduce<false, UINT64_MAX>(

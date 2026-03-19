@@ -38,7 +38,7 @@ parlay::sequence<uint32_t> BFS(Graph& G, size_t s=0) {
                 }
             });
             if (!frontier.advance_to_next()) break;
-            if (frontier.reduce_size() < (G.n >> 6)) {
+            if (frontier.reduce_vertex() < (G.n >> 6)) {
                 frontier.for_each([&](uint32_t s) { frontier.insert_next(s); active.remove(s); });
                 round--; mode = 2; continue;
             }

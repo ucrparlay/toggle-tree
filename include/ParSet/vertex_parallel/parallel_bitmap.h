@@ -5,7 +5,7 @@
 #include <climits>
 #include <utility>
 #include <algorithm>
-#include <vector>
+//#include <vector>
 #include <parlay/sequence.h>
 
 namespace ParSet { namespace internal {
@@ -132,7 +132,7 @@ struct ParallelBitmap {
         return reduce<Write, false, Identity>(0, 0, f, combine);
     }
     template<bool Write>
-    inline uint64_t reduce_size(){
+    inline uint64_t reduce_vertex(){
         if (empty()) return 0;
         if constexpr (Write) {
             if (augval.size() == 0) {
@@ -176,7 +176,7 @@ struct ParallelBitmap {
     template<bool Remove, class T>
     inline parlay::sequence<T> pack() {
         if (empty()) return {};
-        uint64_t total = reduce_size<true>();
+        uint64_t total = reduce_vertex<true>();
         parlay::sequence<T> out(total);
         pack<Remove>(0, 0, 0, out);
         return out;
@@ -184,7 +184,7 @@ struct ParallelBitmap {
     template<bool Remove, class Sequence>
     inline size_t pack_into(Sequence& out) {
         if (empty()) return 0;
-        uint64_t total = reduce_size<true>();
+        uint64_t total = reduce_vertex<true>();
         pack<Remove>(0, 0, 0, out);
         return total;
     }

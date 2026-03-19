@@ -1,8 +1,8 @@
 #include <parlay/io.h>
 #include "verify.h"
 #include "graph.h"
-#include "BFS.h"
-#define Algorithm BFS
+#include "Coloring.h"
+#define Algorithm Coloring
 
 int main(int argc, char** argv) {
     Graph G;
@@ -12,27 +12,21 @@ int main(int argc, char** argv) {
     const char* dumppath = (argc == 2) ? "disabled" : argv[2];
     std::cout << "==================================================================\n";
     std::cout << "### Graph:  " << graph_name << "\n";
-    std::cout << "### Threads: " << parlay::num_workers() << "  Dump: " << dumppath << "\n";;
-    
+    std::cout << "### Threads: " << parlay::num_workers() << "  Dump: " << dumppath << "\n";
+
     parlay::internal::timer t; t.start();
-    auto result = Algorithm(G,0); 
-    result = Algorithm(G,100); 
-    result = Algorithm(G,200); 
-    result = Algorithm(G,300); 
-    result = Algorithm(G,400);
-    std::cout << "Warmup: " << 0.2*t.stop() << "\n";
+    auto result = Algorithm(G);
+    std::cout << "Warmup: " << t.stop() << "\n";
+
     double ttt = 0;
     for (int round = 0; round < 3; round++) {
-        for (int source = 0; source < 500; source +=100) {
-            t.start();
-            result = Algorithm(G,source);
-            double tt = t.stop();
-            std::cout << "Source " << source << "  Round " << round + 1 << " time = " << tt << " sec\n";
-            ttt += tt;
-        }
+        t.start();
+        result = Algorithm(G);
+        double tt = t.stop();
+        std::cout << "Round " << round + 1 << " time = " << tt << " sec\n";
+        ttt += tt;
     }
- 
-    ttt /= 15;
+    ttt /= 3;
 
     process_result(dumppath, filepath, ttt, result, true);  
     return 0;

@@ -20,7 +20,7 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
             if (D[s] == k) { active.remove(s); frontier.insert_next(s);}
         });
         while (frontier.advance_to_next()) {
-            size_t frt_size = frontier.pack_into(frt);
+            auto frt_size = frontier.pack_into(frt);
             parlay::parallel_for(0, frt_size, [&](uint32_t i) {
                 uint32_t s = frt[i];
                 result[s] = k;

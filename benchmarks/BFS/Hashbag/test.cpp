@@ -41,4 +41,3 @@ int main(int argc, char** argv) {
     process_result(dumppath, filepath, ttt, result, true);  
     return 0;
 }
-

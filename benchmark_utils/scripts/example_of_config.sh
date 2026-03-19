@@ -28,7 +28,6 @@ GRAPHS=(
     RoadUSA_sym
     hugetrace-00020_sym
     Germany_sym
-    in_2004_sym
 )
 DENSEGRAPHS=(
     twitter_sym
@@ -43,7 +42,6 @@ DENSEGRAPHS=(
     indochina_sym
     socfb-konect_sym
     socfb-uci-uni_sym
-    in_2004_sym
 )
 SPARSEGRAPHS=(
     planet_sym
