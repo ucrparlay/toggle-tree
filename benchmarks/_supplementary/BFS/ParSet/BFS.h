@@ -47,7 +47,7 @@ parlay::sequence<uint32_t> BFS(Graph& G, size_t s = 0) {
       });
 
       if (!frontier.advance_to_next()) break;
-      size_t frontier_size = frontier.reduce_vertex();
+      size_t frontier_size = frontier.reduce_size();
       // TODO: the switch logic is not good
       if (frontier_size < (G.n >> 6)) {
         frontier.for_each([&](uint32_t u) {

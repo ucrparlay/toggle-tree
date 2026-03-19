@@ -68,6 +68,7 @@ struct ParallelBitmap {
     template <bool Remove, size_t Gran, class F>
     inline void for_each(int layer, uint64_t base, F&& f) {
         uint64_t mask = bitmap[layer][idx(layer, base)];
+        if constexpr (Remove) bitmap[layer][idx(layer, base)] = 0;
         if (layer == 5) {
             parlay::parallel_for(0, __builtin_popcountll(mask), [&](int j) {
                 f(base + (__builtin_ctzll(__builtin_ia32_pdep_di(1ULL << j, mask)) << off(layer + 1)));
@@ -78,12 +79,140 @@ struct ParallelBitmap {
                 for_each<Remove, Gran>(layer + 1, base + (__builtin_ctzll(__builtin_ia32_pdep_di(1ULL << j, mask)) << off(layer + 1)), f);
             }, 1);
         }
-        if constexpr (Remove) bitmap[layer][idx(layer, base)] = 0;
     }
     template <bool Remove, size_t Gran, class F>
     inline void for_each(F&& f) {
         if (empty()) return;
         for_each<Remove, Gran>(0, 0, f);
+    }
+    
+    template <bool Write, bool Size, uint64_t Identity, class F, class Combine>
+    inline uint64_t reduce(int layer, uint64_t base, F&& f, Combine&& combine) {
+        uint64_t mask = bitmap[layer][idx(layer, base)];
+        uint64_t best = Identity;
+        if (layer == 4) {
+            for(size_t i=0; i<__builtin_popcountll(mask); i++){
+                uint64_t childbase = base + (__builtin_ctzll(__builtin_ia32_pdep_di(1ULL << i, mask)) << off(5));
+                uint64_t m = bitmap[5][idx(5, childbase)];
+                uint64_t b;
+                if constexpr (Size) { b = __builtin_popcountll(m); }
+                else {
+                    b = Identity;
+                    for (size_t j=0; j<__builtin_popcountll(m); j++) {
+                        b = combine(b, f(childbase+__builtin_ctzll(__builtin_ia32_pdep_di(1ULL << j, m))));
+                    }
+                }
+                //if constexpr (Write) augval[5][idx(5, childbase)] = b;
+                best = combine(best, b);
+            }
+        }
+        else {
+            uint64_t bests[__builtin_popcountll(mask)];
+            parlay::parallel_for(0, __builtin_popcountll(mask), [&](size_t j) {
+                bests[j] = reduce<Write, Size, Identity>(layer + 1, base + (__builtin_ctzll(__builtin_ia32_pdep_di(1ULL << j, mask)) << off(layer + 1)), f, combine);
+            }, 1);
+            for (size_t j=0; j<__builtin_popcountll(mask); j++) {
+                best = combine(best, bests[j]);
+            }
+        }
+        if constexpr (Write) augval[layer][idx(layer, base)] = best;
+        return best;
+    }
+    template<bool Write, uint64_t Identity, class F, class Combine>
+    inline uint64_t reduce(F&& f, Combine&& combine){
+        if (empty()) return Identity;
+        if constexpr (Write) {
+            if (augval.size() == 0) {
+                augval = parlay::sequence<parlay::sequence<uint64_t>>(5/*6*/);
+                for (int i = 4/*5*/; i >= 0; i--) {
+                    augval[i] = parlay::sequence<uint64_t>(bitmap[i].size(), 0);
+                }
+            }
+        }
+        return reduce<Write, false, Identity>(0, 0, f, combine);
+    }
+    template<bool Write>
+    inline uint64_t reduce_size(){
+        if (empty()) return 0;
+        if constexpr (Write) {
+            if (augval.size() == 0) {
+                augval = parlay::sequence<parlay::sequence<uint64_t>>(5/*6*/);
+                for (int i = 4/*5*/; i >= 0; i--) {
+                    augval[i] = parlay::sequence<uint64_t>(bitmap[i].size(), 0);
+                }
+            }
+        }
+        return reduce<Write, true, 0>(0, 0, 
+            [&] ( ) { return; },
+            [&] (uint64_t a, uint64_t b) { return a+b; }
+        );
+    }
+
+    template<bool Remove, class Sequence>
+    inline void pack(int layer, uint64_t base, uint64_t offset, Sequence& out) {
+        uint64_t mask = bitmap[layer][idx(layer, base)];
+        if constexpr (Remove) { bitmap[layer][idx(layer,base)] = 0; }
+        if (layer == 4) {
+            for(size_t i=0; i<__builtin_popcountll(mask); i++){
+                uint64_t childbase = base + (__builtin_ctzll(__builtin_ia32_pdep_di(1ULL << i, mask)) << off(5));
+                uint64_t m = bitmap[5][idx(5, childbase)];
+                if constexpr (Remove) { bitmap[5][idx(5,childbase)] = 0; }
+                for (size_t j=0; j<__builtin_popcountll(m); j++) {
+                    out[offset++] = childbase + __builtin_ctzll(__builtin_ia32_pdep_di(1ULL << j, m));
+                }
+            }
+        }
+        else {
+            uint64_t offsets[__builtin_popcountll(mask)]; offsets[0] = offset;
+            for (size_t j = 1; j < __builtin_popcountll(mask); j++) {
+                uint64_t prev_base = base + (__builtin_ctzll(__builtin_ia32_pdep_di(1ULL << (j - 1), mask)) << off(layer + 1));
+                offsets[j] = offsets[j - 1] + augval[layer + 1][idx(layer + 1, prev_base)];
+            }
+            parlay::parallel_for(0, __builtin_popcountll(mask), [&](size_t j) {
+                pack<Remove>(layer + 1, base + (__builtin_ctzll(__builtin_ia32_pdep_di(1ULL << j, mask)) << off(layer + 1)), offsets[j], out);
+            }, 1);
+        }
+    }
+    template<bool Remove, class T>
+    inline parlay::sequence<T> pack() {
+        if (empty()) return {};
+        uint64_t total = reduce_size<true>();
+        parlay::sequence<T> out(total);
+        pack<Remove>(0, 0, 0, out);
+        return out;
+    }
+    template<bool Remove, class Sequence>
+    inline size_t pack_into(Sequence& out) {
+        if (empty()) return 0;
+        uint64_t total = reduce_size<true>();
+        pack<Remove>(0, 0, 0, out);
+        return total;
+    }
+
+    template<class F>
+    inline void pop(size_t k, F&& f){
+        if (!k || empty()) return;
+        static thread_local uint64_t rnd = 0x12345678u;
+        parlay::parallel_for(0,k,[&](int){
+            while (true) {
+                if (empty()) return;
+                uint64_t base = 0, m = 0;
+                for(int layer=0; layer<=5; layer++){
+                    m = __atomic_load_n(&bitmap[layer][idx(layer,base)], __ATOMIC_RELAXED);
+                    if (!m) break;
+                    rnd = rnd * 1664525u + 1013904223u;
+                    uint64_t x = rnd & 63;
+                    base += ((__builtin_ctzll((m>>x)|(m<<((-x)&63)))+x) & 63)<<off(layer+1);
+                }
+                if (!m) continue;
+                if (try_remove(base)) { f(base); return; }
+            }
+        });
+    }
+};
+
+}} // namespace internal & ParSet
+
         /*struct Node {int layer; uint64_t base;};
         constexpr uint64_t CAPM = 127;
         Node nodes[CAPM+1], leaves[CAPM+1]; nodes[0] = {0, 0};
@@ -112,39 +241,13 @@ struct ParallelBitmap {
         }
         parlay::parallel_for(0, leaves_n, [&](size_t i) {
             for_each<Remove, Gran>(leaves[i].layer, leaves[i].base, f);
-        }, 1);*/
-    }
-    
-    template <bool Write, uint64_t Identity=0, class F, class Combine>
-    inline uint64_t reduce(int layer, uint64_t base, F&& f, Combine&& combine) {
-        uint64_t mask = bitmap[layer][idx(layer, base)];
-        uint64_t best = Identity;
-        if (layer == 4) {
-            for(size_t i=0; i<__builtin_popcountll(mask); i++){
-                uint64_t childbase = base + (__builtin_ctzll(__builtin_ia32_pdep_di(1ULL << i, mask)) << off(5));
-                uint64_t m = bitmap[5][idx(5, childbase)];
-                uint64_t b = Identity;
-                for (size_t j=0; j<__builtin_popcountll(m); j++) {
-                    b = combine(b, f(childbase+__builtin_ctzll(__builtin_ia32_pdep_di(1ULL << j, m))));
-                }
-                if constexpr (Write) augval[5][idx(5, childbase)] = b;
-                best = combine(best, b);
-            }
-        }
-        else {
-            uint64_t bests[__builtin_popcountll(mask)];
-            parlay::parallel_for(0, __builtin_popcountll(mask), [&](size_t j) {
-                bests[j] = reduce<Write, Identity>(layer + 1, base + (__builtin_ctzll(__builtin_ia32_pdep_di(1ULL << j, mask)) << off(layer + 1)), f, combine);
-            }, 1);
-            for (size_t j=0; j<__builtin_popcountll(mask); j++) {
-                best = combine(best, bests[j]);
-            }
-        }
-        if constexpr (Write) augval[layer][idx(layer, base)] = best;
-        return best;
-    }
-    
-    /*template<bool Write, class F, class Combine>
+        }, 1);
+        
+        
+        
+        
+        */
+            /*template<bool Write, class F, class Combine>
     inline uint64_t reduce(int layer, uint64_t base, uint64_t mask, F&& f, Combine&& combine){
         if (layer >= 4){
             uint64_t best = 0;
@@ -179,22 +282,7 @@ struct ParallelBitmap {
         );
         if constexpr (Write) { return augval[layer][idx(layer, base)] = combine(l, r); }
         else { return combine(l, r); }
-    }*/
-    
-    template<bool Write, class F, class Combine>
-    inline uint64_t reduce(F&& f, Combine&& combine){
-        if (empty()) return 0;
-        if constexpr (Write) {
-            if (augval.size() == 0) {
-                augval = parlay::sequence<parlay::sequence<uint64_t>>(6);
-                for (int i = 5; i >= 0; i--) {
-                    augval[i] = parlay::sequence<uint64_t>(bitmap[i].size(), 0);
-                }
-            }
-        }
-        return reduce<Write>(0, 0, f, combine);//bitmap[0][0], 
     }
-
     template <class F, class Select>
     inline void select(int layer, uint64_t base, uint64_t mask, uint64_t best, F&& f, Select&& sel) {
         if (layer >= 4) {
@@ -232,58 +320,8 @@ struct ParallelBitmap {
         uint64_t best = augval[0][0];
         if (best == 0) return;
         select(0, 0, bitmap[0][0], best, f, sel);
-    }
-
-    template<bool Remove, class Sequence>
-    inline void pack(int layer, uint64_t base, uint64_t mask, uint64_t offset, Sequence& out) {
-        if (layer >= 4) {
-            if (layer == 5) {
-                for (; mask; mask &= mask - 1) {
-                    out[offset++] = base + __builtin_ctzll(mask);
-                }
-            }
-            else {
-                for (; mask; mask &= mask - 1) {
-                    uint64_t child_base = base + (__builtin_ctzll(mask) << off(layer + 1));
-                    pack<Remove>(layer + 1, child_base, bitmap[layer + 1][idx(layer + 1, child_base)], offset, out);
-                    offset += augval[layer + 1][idx(layer + 1, child_base)];
-                }
-            }
-            if constexpr (Remove) { bitmap[layer][idx(layer,base)] = 0; }
-            return;
-        }
-        if ((mask ^ (mask & -mask)) == 0) {
-            pack<Remove>(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)), bitmap[layer + 1][idx(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)))], offset, out);
-            if constexpr (Remove) { bitmap[layer][idx(layer,base)] = 0; }
-            return;
-        }
-        parlay::parallel_do(
-            [&]() { pack<Remove>(layer, base, mask ^ mask & -mask, offset + augval[layer + 1][idx(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)))], out); },
-            [&]() { pack<Remove>(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)), bitmap[layer + 1][idx(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)))], offset, out); }
-        );
-    }
-    template<bool Remove, class T>
-    inline parlay::sequence<T> pack() {
-        if (empty()) return {};
-        uint64_t total = reduce<true>(
-            [&] (size_t) { return 1; },
-            [&] (uint64_t l, uint64_t r) { return l + r; }
-        );
-        parlay::sequence<T> out(total);
-        pack<Remove>(0, 0, bitmap[0][0], 0, out);
-        return out;
-    }
-    template<bool Remove, class Sequence>
-    inline size_t pack_into(Sequence& out) {
-        if (empty()) return 0;
-        uint64_t total = reduce<true>(
-            [&] (size_t) { return 1; },
-            [&] (uint64_t l, uint64_t r) { return l + r; }
-        );
-        pack<Remove>(0, 0, bitmap[0][0], 0, out);
-        return total;
-    }
-
+    }    
+    
     template<class Graph, class Cond, class Update>
     inline void edgemap(Graph& G, Cond&& cond, Update&& update) {
         if (empty()) return;
@@ -353,58 +391,4 @@ struct ParallelBitmap {
             }
         }, 1);
     }
-
-    inline void merge_into(int layer, uint64_t base, uint64_t mask, ParallelBitmap& other) {
-        if (layer == 4) {
-            for (; mask != 0; mask &= mask - 1) {
-                uint64_t w = (base + (__builtin_ctzll(mask) << off(5))) >> 6;
-                other.bitmap[5][w] &= ~bitmap[5][w];
-                if (!other.bitmap[5][w]) {
-                    for (int i = 4; i >= 0; --i) {
-                        if (__atomic_fetch_and( &other.bitmap[i][(w << 6) >> off(i)], ~(1ULL << (((w << 6) >> off(i+1)) & 63)), __ATOMIC_RELAXED) & ~(1ULL << (((w << 6) >> off(i+1)) & 63)))
-                            break;
-                    }
-                }
-                bitmap[5][w] = 0;
-            }
-            bitmap[layer][idx(layer,base)] = 0;
-            return;
-        }
-        if ((mask ^ mask & -mask) == 0) {
-            merge_into(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)), bitmap[layer + 1][idx(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)))], other);
-            bitmap[layer][idx(layer, base)] = 0;
-            return;
-        }
-        parlay::parallel_do(
-            [&]() { merge_into(layer, base, mask ^ mask & -mask, other); },
-            [&]() { merge_into(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)), bitmap[layer + 1][idx(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)))], other); }
-        );
-    }
-    inline void merge_into(ParallelBitmap& other) {
-        if (empty()) return;
-        merge_into(0, 0, bitmap[0][0], other);
-    }
-
-    template<class F>
-    inline void pop(size_t k, F&& f){
-        if (!k || empty()) return;
-        static thread_local uint64_t rnd = 0x12345678u;
-        parlay::parallel_for(0,k,[&](int){
-            while (true) {
-                if (empty()) return;
-                uint64_t base = 0, m = 0;
-                for(int layer=0; layer<=5; layer++){
-                    m = __atomic_load_n(&bitmap[layer][idx(layer,base)], __ATOMIC_RELAXED);
-                    if (!m) break;
-                    rnd = rnd * 1664525u + 1013904223u;
-                    uint64_t x = rnd & 63;
-                    base += ((__builtin_ctzll((m>>x)|(m<<((-x)&63)))+x) & 63)<<off(layer+1);
-                }
-                if (!m) continue;
-                if (try_remove(base)) { f(base); return; }
-            }
-        });
-    }
-};
-
-}} // namespace internal & ParSet
+    */
