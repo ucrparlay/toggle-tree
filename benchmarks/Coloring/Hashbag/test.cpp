@@ -5,9 +5,8 @@
 #define Algorithm Coloring
 
 int main(int argc, char** argv) {
-    Graph G;
     const char* filepath = argv[1];
-    G.read_graph(filepath); if (G.n == 0) { std::cerr << "Failed in reading graph.\n"; return 0; }
+    Graph G(filepath);
     std::string graph_name = extract_graph_name(filepath);
     const char* dumppath = (argc == 2) ? "disabled" : argv[2];
     std::cout << "==================================================================\n";

@@ -116,9 +116,8 @@ inline times benchmark_pack(Graph& G, size_t s) {
 }
 
 int main(int argc, char** argv) {
-    Graph G;
     const char* filepath = argv[1];
-    G.read_graph(filepath); if (G.n == 0) { std::cerr << "Failed in reading graph.\n"; return 0; }
+    Graph G(filepath);
     std::string graph_name = extract_graph_name(filepath);
     std::cout << "==================================================================\n";
     std::cout << "### Graph:  " << graph_name << "\n";

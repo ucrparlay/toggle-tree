@@ -5,7 +5,6 @@ template <class Graph>
 parlay::sequence<uint32_t> KCore(Graph& G) {
     const size_t n = G.n;
     auto result = parlay::sequence<uint32_t>(n, 0);
-
     auto active = ParSet::Active(n);
     auto frontier = ParSet::Frontier(n);
     auto D = parlay::tabulate<uint32_t>(n, [&](size_t s){ 
