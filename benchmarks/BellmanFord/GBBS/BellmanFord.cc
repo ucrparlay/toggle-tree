@@ -23,6 +23,7 @@
 
 #include "BellmanFord.h"
 #include "verify.h"
+#include <cstdlib>
 
 namespace gbbs {
 template <class Graph>
@@ -32,27 +33,27 @@ double BellmanFord_runner(Graph& G, commandLine P) {
     const char* dumppath = P.getOptionValue("-dump") == nullptr ? "disabled" : P.getOptionValue("-dump");
     std::cout << "### Graph: " << gname << std::endl;
     std::cout << "### Threads: " << num_workers() << "  Dump: " << dumppath << "\n";
-    
-    parlay::internal::timer t;
-    t.start();
-    auto result = BellmanFord(G, 1);
-    double tt = t.stop();
-    std::cout << "Warmup: " << tt << "\n";
 
-    double ttt = 0;
-    for (int round = 0; round < 3; round++) {
+    auto perm = parlay::random_permutation<uint32_t>(G.n);
+    parlay::internal::timer t; double tt = 0, ttt = 0;
+    t.start();
+    parlay::sequence<int32_t> result;
+    for (int i = 0; i < 3; i++) {
+        auto s = perm[i];
+        std::cout << "Round " << i + 1 << "  source = " << s;
         t.start();
-        result = BellmanFord(G, 100*round);
+        result = BellmanFord(G, s);
+        std::cout << "  Warmup = " << t.stop();
+        t.start();
+        result = BellmanFord(G, s);
         tt = t.stop();
-        std::cout << "Round " << round + 1 << " time = " << tt << " sec\n";
+        std::cout << " time = " << tt << " sec\n";
         ttt += tt;
     }
-    
     ttt /= 3;
 
     process_result(dumppath, P.getArgument(0), ttt, result, true, "../../benchmarks/BellmanFord");
-    static std::ofstream null("/dev/null");
-    std::cout.rdbuf(null.rdbuf());
+    std::exit(0);
     return tt;
 }
 }  // namespace gbbs

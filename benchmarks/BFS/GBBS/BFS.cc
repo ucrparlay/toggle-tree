@@ -34,34 +34,27 @@ double BFS_runner(Graph& G, commandLine P) {
     std::cout << "### Threads: " << num_workers();
     const char* dumppath = P.getOptionValue("-dump") == nullptr ? "disabled" : P.getOptionValue("-dump");
     std::cout << "  Dump: " << dumppath << "\n";
-
+    
     auto perm = parlay::random_permutation<uint32_t>(G.n);
     parlay::internal::timer t; double tt = 0, ttt = 0;
-    std::cout << "Warmup: ";
     t.start();
-    auto result = BFS(G, perm[0]);
-    std::cout << t.stop() << " ";
-    for (int i = 1; i < 5; i++) {
+    parlay::sequence<uint32_t> result;
+    for (int i = 0; i < 3; i++) {
         auto s = perm[i];
+        std::cout << "Round " << i + 1 << "  source = " << s;
         t.start();
         result = BFS(G, s);
-        std::cout << t.stop() << " ";
-    }
-    std::cout << "\n";
-
-    for (int i = 0; i < 5; i++) {
-        auto s = perm[i];
+        std::cout << "  Warmup = " << t.stop();
         t.start();
         result = BFS(G, s);
         tt = t.stop();
-        std::cout << "Round " << i + 1 << " source = " << s << " time = " << tt << " sec\n";
+        std::cout << " time = " << tt << " sec\n";
         ttt += tt;
     }
-    ttt /= 5;
+    ttt /= 3;
 
     process_result(dumppath, P.getArgument(0), ttt, result, true, "../../benchmarks/BFS");
-    static std::ofstream null("/dev/null");
-    std::cout.rdbuf(null.rdbuf());
+    std::exit(0);
     return tt;
 }
 
