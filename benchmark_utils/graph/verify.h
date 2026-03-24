@@ -43,17 +43,9 @@ std::string GetHash(const parlay::sequence<uint32_t>& results) {
 }
 
 std::string extract_graph_name(const char* path) {
-    std::string s(path);
-    size_t pos = s.find_last_of('/');
-    if (pos != std::string::npos) {
-        s = s.substr(pos + 1);
-    }
-    const std::string suffix = ".bin";
-    if (s.size() >= suffix.size() &&
-        s.compare(s.size() - suffix.size(), suffix.size(), suffix) == 0) {
-        s.resize(s.size() - suffix.size());
-    }
-    return s;
+    std::string name = std::string(path).substr(0, std::string(path).find_last_of('.'));
+    if (name.find_last_of('/') != std::string::npos) { name = name.substr(name.find_last_of('/') + 1); }
+    return name;
 }
 
 using CSV = std::vector<std::vector<std::string>>;
