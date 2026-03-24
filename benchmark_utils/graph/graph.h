@@ -34,7 +34,7 @@ struct Graph {
     parlay::sequence<uint64_t> in_offsets_seq;
     parlay::sequence<Edge<Wgh>> in_edges_seq;
 
-    Graph(const char *filename, int32_t l=1, int32_t r=1): 
+    Graph(const char *filename, int32_t r=0): 
         symmetrized(std::string(filename).find("_sym") != std::string::npos),
         weighted(false),
         in_offsets(symmetrized ? offsets : in_offsets_seq),
@@ -42,19 +42,13 @@ struct Graph {
     {
         std::string str_filename(filename);
         std::string subfix = str_filename.substr(str_filename.find_last_of('.') + 1);
-        if (subfix == "bin") {
-            read_binary_format(filename);
-        } 
-        else if (subfix == "adj") {
-            read_pbbs_format(filename);
-        } 
-        else {
-            std::cerr << "Error: Invalid graph extension or format: " << filename << "\n"; abort();
-        }
+        if (subfix == "bin") { read_binary_format(filename); } 
+        else if (subfix == "adj") { read_pbbs_format(filename); } 
+        else { std::cerr << "Error: Invalid graph extension or format: " << filename << "\n"; abort(); }
         name = str_filename.substr(0, str_filename.find_last_of('.'));
         if (name.find_last_of('/') != std::string::npos) { name = name.substr(name.find_last_of('/') + 1); }
         if (!symmetrized) { make_inverse(); }
-        if constexpr (std::is_same_v<Wgh, int32_t>) { if (!weighted) make_random_weight(l, r); }
+        if constexpr (std::is_same_v<Wgh, int32_t>) { if (!weighted) make_random_weight(r); }
     }
 
     void make_inverse() {
@@ -79,20 +73,21 @@ struct Graph {
         parlay::scan_inclusive_inplace(parlay::make_slice(in_offsets_seq.rbegin(), in_offsets_seq.rend()), parlay::minm<uint64_t>());
     }
 
-    void make_random_weight(int32_t l, int32_t r) {
+    void make_random_weight(int32_t r=0) {
         weighted = true;
-        int32_t range = r - l + 1;
+        assert(r >= 0); if (r == 0) r = (int32_t)std::log2((double)n);
+        int32_t range = r;
         parlay::parallel_for(0, n, [&](uint32_t u) {
             parlay::parallel_for(offsets[u], offsets[u + 1], [&](uint64_t i) {
                 uint32_t v = edges[i].v;
-                edges[i].w = ((parlay::hash32(u) ^ parlay::hash32(v)) % range) + l;
+                edges[i].w = 1 + ((parlay::hash32(u) ^ parlay::hash32(v)) % range);
             });
         });
         if (!symmetrized) {
             parlay::parallel_for(0, n, [&](uint32_t v) {
                 for (uint64_t j = in_offsets_seq[v]; j < in_offsets_seq[v + 1]; j++) {
                     uint32_t u = in_edges_seq[j].v;
-                    in_edges_seq[j].w = ((parlay::hash32(u) ^ parlay::hash32(v)) % range) + l;
+                    in_edges_seq[j].w = 1 + ((parlay::hash32(u) ^ parlay::hash32(v)) % range);
                 }
             });
         }
