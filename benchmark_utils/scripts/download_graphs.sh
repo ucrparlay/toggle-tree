@@ -10,3 +10,8 @@ for g in "${SPARSEGRAPHS[@]}"; do
     [ -f "$f" ] && continue
     wget -O "$f" "https://pasgal-bs.cs.ucr.edu/bin/${g}.bin" || rm -f "$f"
 done
+for g in "${WEIGHTEDGRAPHS[@]}"; do
+    f="${ADJ_DIR}${g}.adj"
+    [ -f "$f" ] && continue
+    wget -O "$f" "https://pasgal-bs.cs.ucr.edu/pbbs/${g}.adj" || rm -f "$f"
+done

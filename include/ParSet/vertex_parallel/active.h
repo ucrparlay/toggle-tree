@@ -57,6 +57,11 @@ struct Active {
             [&] (uint64_t l, uint64_t r) { return (l + r); }
         );
     }
+
+    template<class Dist, class Frt>
+    inline uint64_t extract_min(Frt& out,Dist& dist){
+        return active.extract_min(dist,[&](uint32_t s){ out.insert_next(s); });
+    }
 };
 
 } // namespace ParSet

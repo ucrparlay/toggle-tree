@@ -61,6 +61,11 @@ struct Frontier {
             [&] (uint64_t l, uint64_t r) { return (l + r); }
         );
     }
+
+    template<class Array, class Act>
+    inline void repair(Act& active,Array& dist){
+        frontier.repair(active.active, dist);
+    }
 };
 
 } // namespace ParSet

@@ -102,7 +102,7 @@ struct ParallelBitmap {
                         b = combine(b, f(childbase+__builtin_ctzll(__builtin_ia32_pdep_di(1ULL << j, m))));
                     }
                 }
-                //if constexpr (Write) augval[5][idx(5, childbase)] = b;
+                if constexpr (Write) augval[5][idx(5, childbase)] = b;
                 best = combine(best, b);
             }
         }
@@ -123,8 +123,8 @@ struct ParallelBitmap {
         if (empty()) return Identity;
         if constexpr (Write) {
             if (augval.size() == 0) {
-                augval = parlay::sequence<parlay::sequence<uint64_t>>(5/*6*/);
-                for (int i = 4/*5*/; i >= 0; i--) {
+                augval = parlay::sequence<parlay::sequence<uint64_t>>(6);
+                for (int i = 5; i >= 0; i--) {
                     augval[i] = parlay::sequence<uint64_t>(bitmap[i].size(), 0);
                 }
             }
@@ -136,8 +136,8 @@ struct ParallelBitmap {
         if (empty()) return 0;
         if constexpr (Write) {
             if (augval.size() == 0) {
-                augval = parlay::sequence<parlay::sequence<uint64_t>>(5/*6*/);
-                for (int i = 4/*5*/; i >= 0; i--) {
+                augval = parlay::sequence<parlay::sequence<uint64_t>>(6);
+                for (int i = 5; i >= 0; i--) {
                     augval[i] = parlay::sequence<uint64_t>(bitmap[i].size(), 0);
                 }
             }
@@ -146,6 +146,149 @@ struct ParallelBitmap {
             [&] ( ) { return; },
             [&] (uint64_t a, uint64_t b) { return a+b; }
         );
+    }
+
+    template<class Dist,class Emit>
+inline uint64_t extract_min_rec_serial(int layer, uint64_t base, Dist& dist, Emit&& emit){
+    uint64_t best = INT32_MAX, newmask = 0;
+    if (layer == 4) {
+        for(size_t i=0; i<__builtin_popcountll(bitmap[4][idx(4,base)]); i++){
+            uint64_t childbase = base+(__builtin_ctzll(__builtin_ia32_pdep_di(1ULL<<i,bitmap[4][idx(4,base)]))<<off(5));
+            if (augval[5][idx(5,childbase)] != augval[0][0]) {
+                newmask |= 1ULL<<((childbase>>off(5))&63);
+                best = std::min(best,augval[5][idx(5,childbase)]);
+                continue;
+            }
+            uint64_t nm=0, b=INT32_MAX, m=bitmap[5][idx(5,childbase)];
+            for(size_t j=0; j<__builtin_popcountll(m); j++){
+                uint64_t v = childbase+__builtin_ctzll(__builtin_ia32_pdep_di(1ULL<<j,m));
+                if ((uint64_t)dist[v]==augval[0][0]) emit(v);
+                else nm|=1ULL<<(v&63),b=std::min(b,(uint64_t)dist[v]);
+            }
+            bitmap[5][idx(5,childbase)] = nm;
+            augval[5][idx(5,childbase)] = b;
+            if (nm) newmask|=1ULL<<((childbase>>off(5))&63), best=std::min(best,b);
+        }
+    } else {
+        uint64_t bests[__builtin_popcountll(bitmap[layer][idx(layer,base)])];
+        for(size_t j=0; j<__builtin_popcountll(bitmap[layer][idx(layer,base)]); j++){
+            uint64_t childbase=base+(__builtin_ctzll(__builtin_ia32_pdep_di(1ULL<<j,bitmap[layer][idx(layer,base)]))<<off(layer+1));
+            bests[j] =
+                (augval[layer+1][idx(layer+1,childbase)] == augval[0][0]) ?
+                extract_min_rec_serial(layer+1,childbase,dist,emit) :
+                augval[layer+1][idx(layer+1,childbase)];
+        }
+        for(size_t j=0; j<__builtin_popcountll(bitmap[layer][idx(layer,base)]); j++){
+            uint64_t childbase=base+(__builtin_ctzll(__builtin_ia32_pdep_di(1ULL<<j,bitmap[layer][idx(layer,base)]))<<off(layer+1));
+            if (bitmap[layer+1][idx(layer+1,childbase)]) {
+                newmask |= 1ULL<<((childbase>>off(layer+1))&63);
+                best = std::min<uint64_t>(best,bests[j]);
+            }
+        }
+    }
+    bitmap[layer][idx(layer,base)] = newmask;
+    return augval[layer][idx(layer,base)] = best;
+}
+
+    template<class Dist,class Emit>
+    inline uint64_t extract_min_rec(int layer, uint64_t base, Dist& dist, Emit&& emit){
+        uint64_t best = INT32_MAX, newmask = 0;
+        if (layer == 4) {
+            for(size_t i=0; i<__builtin_popcountll(bitmap[4][idx(4,base)]); i++){
+                uint64_t childbase = base+(__builtin_ctzll(__builtin_ia32_pdep_di(1ULL<<i,bitmap[4][idx(4,base)]))<<off(5));
+                if (augval[5][idx(5,childbase)] != augval[0][0]) {
+                    newmask |= 1ULL<<((childbase>>off(5))&63);
+                    best = std::min(best,augval[5][idx(5,childbase)]);
+                    continue;
+                }
+                uint64_t nm=0, b=INT32_MAX, m=bitmap[5][idx(5,childbase)];
+                for(size_t j=0; j<__builtin_popcountll(m); j++){
+                    uint64_t v = childbase+__builtin_ctzll(__builtin_ia32_pdep_di(1ULL<<j,m));
+                    if ((uint64_t)dist[v]==augval[0][0]) { emit(v); }
+                    else nm|=1ULL<<(v&63),b=std::min(b,(uint64_t)dist[v]);
+                }
+                bitmap[5][idx(5,childbase)] = nm;
+                augval[5][idx(5,childbase)] =b ;
+                if (nm) newmask|=1ULL<<((childbase>>off(5))&63), best=std::min(best,b);
+            }
+        }
+        else if (layer == 3) {
+            for(size_t j=0; j<__builtin_popcountll(bitmap[3][idx(3,base)]); j++){
+                uint64_t childbase = base+(__builtin_ctzll(__builtin_ia32_pdep_di(1ULL<<j,bitmap[3][idx(3,base)]))<<off(4));
+                uint64_t b = 
+                    (augval[4][idx(4,childbase)] == augval[0][0]) ? 
+                    extract_min_rec(4,childbase,dist,emit): 
+                    augval[4][idx(4,childbase)];
+                if (bitmap[4][idx(4,childbase)]) {
+                    newmask |= 1ULL<<((childbase>>off(4))&63);
+                    best = std::min<uint64_t>(best,b);
+                }
+            }
+        }
+        else {
+            uint64_t bests[__builtin_popcountll(bitmap[layer][idx(layer,base)])];
+            parlay::parallel_for(0, __builtin_popcountll(bitmap[layer][idx(layer,base)]), [&](size_t j){
+                uint64_t childbase=base+(__builtin_ctzll(__builtin_ia32_pdep_di(1ULL<<j,bitmap[layer][idx(layer,base)]))<<off(layer+1));
+                bests[j] = 
+                    (augval[layer+1][idx(layer+1,childbase)] == augval[0][0]) ? 
+                    extract_min_rec(layer+1,childbase,dist,emit): 
+                    augval[layer+1][idx(layer+1,childbase)];
+            },1);
+            for(size_t j=0; j<__builtin_popcountll(bitmap[layer][idx(layer,base)]); j++){
+                uint64_t childbase=base+(__builtin_ctzll(__builtin_ia32_pdep_di(1ULL<<j,bitmap[layer][idx(layer,base)]))<<off(layer+1));
+                if (bitmap[layer+1][idx(layer+1,childbase)]) {
+                    newmask |= 1ULL<<((childbase>>off(layer+1))&63);
+                    best = std::min<uint64_t>(best,bests[j]);
+                }
+            }
+        }
+        bitmap[layer][idx(layer,base)] = newmask;
+        return augval[layer][idx(layer,base)] = best;
+    }
+
+    template<class Dist,class Emit>
+    inline uint64_t extract_min(Dist& dist,Emit&& emit){
+        if(empty()) return UINT64_MAX;
+        extract_min_rec(0, 0, dist, emit);
+        return augval[0][0];
+    }
+
+    template<class Dist>
+    inline uint64_t repair_rec(int layer, uint64_t base, ParallelBitmap& active, Dist& dist){
+        uint64_t best = INT32_MAX;
+        if (layer == 4) {
+            for(size_t i=0; i<__builtin_popcountll(bitmap[4][idx(4,base)]); i++){
+                uint64_t childbase = base+(__builtin_ctzll(__builtin_ia32_pdep_di(1ULL<<i,bitmap[4][idx(4,base)]))<<off(5));
+                uint64_t b = INT32_MAX, m = bitmap[5][idx(5,childbase)];
+                for(size_t j=0; j<__builtin_popcountll(m); j++) b = std::min<uint64_t>(b, (uint32_t)dist[childbase+__builtin_ctzll(__builtin_ia32_pdep_di(1ULL<<j,m))]);
+                active.augval[5][idx(5,childbase)] = std::min<uint64_t>(active.augval[5][idx(5,childbase)], b);
+                best = std::min<uint64_t>(best, active.augval[5][idx(5,childbase)]);
+                bitmap[5][idx(5,childbase)] = 0;
+            }
+        }
+        else {
+            uint64_t bests[__builtin_popcountll(bitmap[layer][idx(layer,base)])];
+            parlay::parallel_for(0, __builtin_popcountll(bitmap[layer][idx(layer,base)]), [&](size_t j){
+                uint64_t childbase = base+(__builtin_ctzll(__builtin_ia32_pdep_di(1ULL<<j,bitmap[layer][idx(layer,base)]))<<off(layer+1));
+                bests[j] = repair_rec(layer+1, childbase, active, dist);
+            }, 1);
+            for(size_t j=0; j<__builtin_popcountll(bitmap[layer][idx(layer,base)]); j++) best = std::min<uint64_t>(best, bests[j]);
+        }
+        bitmap[layer][idx(layer,base)] = 0;
+        active.augval[layer][idx(layer,base)] = std::min<uint64_t>(active.augval[layer][idx(layer,base)], best);
+        return active.augval[layer][idx(layer,base)];
+    }
+
+    template<class Dist>
+    inline void repair(ParallelBitmap& active,Dist& dist){
+        if (active.augval.size() == 0) {
+            active.augval = parlay::sequence<parlay::sequence<uint64_t>>(6);
+            for (int i = 5; i >= 0; i--) {
+                active.augval[i] = parlay::sequence<uint64_t>(active.bitmap[i].size(), INT32_MAX);
+            }
+        }
+        if(empty()) return;
+        repair_rec(0,0,active,dist);
     }
 
     template<bool Remove, class Sequence>
