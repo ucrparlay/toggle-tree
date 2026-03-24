@@ -11,8 +11,6 @@ struct Active {
     inline bool contains(size_t i) const noexcept { return active.contains(i); }
     inline void insert(size_t i) noexcept { active.insert(i); }
     inline void remove(size_t i) noexcept { active.remove(i); }
-    inline bool try_insert(size_t i) noexcept { return active.try_insert(i); }
-    inline bool try_remove(size_t i) noexcept { return active.try_remove(i); }
 
     template <bool Remove = false, size_t Gran = 64, class F>
     void for_each(F&& f) { active.for_each<Remove, Gran>(f); }

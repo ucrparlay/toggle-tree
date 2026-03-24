@@ -13,8 +13,6 @@ struct Frontier {
     inline bool contains_next(size_t i) const noexcept { return next.contains(i); }
     inline void insert_next(size_t i) noexcept { next.insert(i); }
     inline void remove_next(size_t i) noexcept { next.remove(i); }
-    inline bool try_insert_next(size_t i) noexcept { return next.try_insert(i); }
-    inline bool try_remove_next(size_t i) noexcept { return next.try_remove(i); }
     inline bool advance_to_next() noexcept { std::swap(frontier, next); return !empty(); }
     
     template <bool Remove = true, size_t Gran = 8, class F>

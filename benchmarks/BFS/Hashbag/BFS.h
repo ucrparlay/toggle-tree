@@ -38,7 +38,7 @@ parlay::sequence<uint32_t> BFS(Graph& G, size_t s = 0) {
                 result[u] = round;
                 ParSet::adaptive_for(G.offsets[u], G.offsets[u + 1], [&](size_t j) {
                     uint32_t v = G.edges[j].v;
-                    if (active.try_remove(v)) {
+                    if (active.active.try_remove(v)) {
                         frontier.insert(v);
                     }
                 });
