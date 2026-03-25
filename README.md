@@ -100,11 +100,5 @@ Frontier has two sets, so it is supported to call for_each on Frontier while cal
 ### For Each & Pack
 ParSet has good performance because it avoids packing. Pack is implemented only for special needs, while for_each is recommended to be used in common.
 
-### Reduce & Select
-You can provide a <True> flag, to let Reduction save its process on a augment tree.
-Taking advantage of the augment tree, visiting elements has contains min/max value is supported.
-It also enables packing and edgemap, although both do not have better performance than for_each.
-Make sure Reduce is called before Select. Otherwise there will be no augment tree.
-
 ### Edge Parallel
 A simple degree-based strategy is used for parallelizing a single vertex’s adjacency range. For ranges shorter than 256, adaptive_for process sequentially to avoid scheduler overhead. work is parallelized either with parlay::parallel_for (in adaptive_for) or with recursive parlay::parallel_do splitting (in helper routines like adaptive_sum/min/exist) until the range is < 256. No fully load-balanced edgemap is implemented; Parlay’s work-stealing scheduler is relied on to smooth imbalance.
