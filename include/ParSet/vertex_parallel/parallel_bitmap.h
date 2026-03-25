@@ -5,7 +5,6 @@
 #include <climits>
 #include <utility>
 #include <algorithm>
-//#include <vector>
 #include <parlay/sequence.h>
 
 namespace ParSet { namespace internal {
@@ -312,7 +311,7 @@ struct ParallelBitmap {
 
 }} // namespace internal & ParSet
 
-        /*struct Node {int layer; uint64_t base;};
+    /*struct Node {int layer; uint64_t base;};
         constexpr uint64_t CAPM = 127;
         Node nodes[CAPM+1], leaves[CAPM+1]; nodes[0] = {0, 0};
         size_t head = 0, tail = 1, leaves_n = 0;
@@ -346,148 +345,3 @@ struct ParallelBitmap {
         
         
         */
-            /*template<bool Write, class F, class Combine>
-    inline uint64_t reduce(int layer, uint64_t base, uint64_t mask, F&& f, Combine&& combine){
-        if (layer >= 4){
-            uint64_t best = 0;
-            if(layer == 5){
-                for(; mask; mask &= mask-1){
-                    uint64_t t = base+__builtin_ctzll(mask);
-                    best = combine(best, f(t));
-                }
-            } 
-            else {
-                for(; mask; mask &= mask-1){
-                    uint64_t child_base = base + (__builtin_ctzll(mask)<<off(layer+1));
-                    auto r = reduce<Write>(layer+1, child_base, bitmap[layer+1][idx(layer+1,child_base)], f, combine);
-                    best = combine(best, r);
-                }
-            }
-            if constexpr (Write) augval[layer][idx(layer, base)] = best;
-            return best;
-        }
-        if((mask^mask&-mask)==0){
-            if constexpr (Write) {
-                return augval[layer][idx(layer, base)] = reduce<Write>(layer+1, base + (__builtin_ctzll(mask)<<off(layer+1)), bitmap[layer+1][idx(layer+1,base + (__builtin_ctzll(mask)<<off(layer+1)))], f, combine);
-            }
-            else{
-                return reduce<Write>(layer+1, base + (__builtin_ctzll(mask)<<off(layer+1)), bitmap[layer+1][idx(layer+1,base + (__builtin_ctzll(mask)<<off(layer+1)))], f, combine);
-            }
-        }
-        uint64_t l, r;
-        parlay::parallel_do(
-            [&](){ l = reduce<Write>(layer, base, mask^mask&-mask, f, combine); },
-            [&](){ r = reduce<Write>(layer+1, base + (__builtin_ctzll(mask)<<off(layer+1)), bitmap[layer+1][idx(layer+1,base + (__builtin_ctzll(mask)<<off(layer+1)))], f, combine); }
-        );
-        if constexpr (Write) { return augval[layer][idx(layer, base)] = combine(l, r); }
-        else { return combine(l, r); }
-    }
-    template <class F, class Select>
-    inline void select(int layer, uint64_t base, uint64_t mask, uint64_t best, F&& f, Select&& sel) {
-        if (layer >= 4) {
-            if (layer == 5) {
-                for (; mask != 0; mask &= mask - 1) {
-                    uint64_t i = base + __builtin_ctzll(mask);
-                    if (f(i) == best) sel(i);
-                }
-            }
-            else {
-                for (; mask != 0; mask &= mask - 1) {
-                    uint64_t child_base = base + (__builtin_ctzll(mask) << off(layer + 1));
-                    if (augval[layer+1][idx(layer+1, child_base)] == best)
-                    select(layer + 1, child_base, bitmap[layer + 1][idx(layer + 1, child_base)], best, f, sel); 
-                }
-            }
-            return;
-        }
-        if ((mask ^ mask & -mask) == 0) {
-            if (augval[layer+1][idx(layer+1, base + (__builtin_ctzll(mask & -mask) << off(layer+1)))] == best)
-            select(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)), bitmap[layer + 1][idx(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)))], best, f, sel);
-            return;
-        }
-        parlay::parallel_do(
-            [&]() { select(layer, base, mask ^ mask & -mask, best, f, sel); },
-            [&]() { 
-                if (augval[layer+1][idx(layer+1, base + (__builtin_ctzll(mask & -mask) << off(layer+1)))] == best)
-                select(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)), bitmap[layer + 1][idx(layer + 1, base + (__builtin_ctzll(mask & -mask) << off(layer + 1)))], best, f, sel); 
-            }
-        );
-    }
-    template <class F, class Select>
-    inline void select(F&& f, Select&& sel) {
-        if (empty()) return;
-        uint64_t best = augval[0][0];
-        if (best == 0) return;
-        select(0, 0, bitmap[0][0], best, f, sel);
-    }    
-    
-    template<class Graph, class Cond, class Update>
-    inline void edgemap(Graph& G, Cond&& cond, Update&& update) {
-        if (empty()) return;
-        uint64_t total = reduce<true>(
-            [&] (size_t s) { return G.offsets[s+1] - G.offsets[s]; },
-            [&] (uint64_t l, uint64_t r) { return l + r; }
-        );
-        if (!total) return;
-        const uint64_t block_size = 1024, num_blocks = (total + block_size - 1) / block_size;
-        parlay::parallel_for(0, num_blocks, [&](size_t block_idx) {
-            uint64_t L = block_idx * block_size, need = std::min(block_size, total - L), done = 0;
-            uint64_t B[6], M[6], offv = 0; size_t s = 0;
-
-            auto seek = [&](uint64_t k) {
-                uint64_t base = 0, mask = bitmap[0][0], rem = k;
-                for (int layer = 0; layer < 5; layer++) {
-                    uint64_t mm = mask;
-                    while (true) {
-                        uint64_t bit = mm & -mm;
-                        uint64_t child_base = base + (__builtin_ctzll(bit) << off(layer + 1));
-                        uint64_t w = augval[layer + 1][idx(layer + 1, child_base)];
-                        if (rem < w) { B[layer] = base; M[layer] = mm; base = child_base; mask = bitmap[layer + 1][idx(layer + 1, child_base)]; break; }
-                        rem -= w; mm ^= bit;
-                    }
-                }
-                B[5] = base;
-                uint64_t mm = mask;
-                while (true) {
-                    uint64_t bit = mm & -mm;
-                    uint64_t v = base + __builtin_ctzll(bit);
-                    uint64_t deg = G.offsets[v+1] - G.offsets[v];
-                    if (rem < deg) { M[5] = mm; s = v; offv = rem; return; }
-                    rem -= deg; mm ^= bit;
-                }
-            };
-
-            auto next_vertex = [&]() -> bool {
-                M[5] &= M[5] - 1;
-                if (M[5]) { s = B[5] + __builtin_ctzll(M[5]); offv = 0; return true; }
-                for (int layer = 4; layer >= 0; layer--) {
-                    M[layer] &= M[layer] - 1;
-                    if (!M[layer]) continue;
-                    uint64_t child_base = B[layer] + (__builtin_ctzll(M[layer]) << off(layer + 1));
-                    for (int t = layer + 1; t <= 5; t++) {
-                        B[t] = child_base;
-                        uint64_t m = bitmap[t][idx(t, child_base)];
-                        M[t] = m;
-                        if (t == 5) break;
-                        child_base += (__builtin_ctzll(m) << off(t + 1));
-                    }
-                    s = B[5] + __builtin_ctzll(M[5]); offv = 0; return true;
-                }
-                return false;
-            };
-
-            seek(L);
-            while (done < need) {
-                uint64_t deg = G.offsets[s+1] - G.offsets[s];
-                uint64_t take = std::min(deg - offv, need - done);
-                uint64_t e0 = G.offsets[s] + offv;
-                for (uint64_t i = 0; i < take; i++) {
-                    if (cond(G.edges[e0 + i].v)) update(s, G.edges[e0 + i].v);
-                }
-                done += take; offv += take;
-                if (done == need) break;
-                if (offv == deg && !next_vertex()) break;
-            }
-        }, 1);
-    }
-    */
