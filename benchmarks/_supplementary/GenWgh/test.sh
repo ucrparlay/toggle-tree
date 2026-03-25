@@ -1,4 +1,4 @@
 source ../../../benchmark_utils/scripts/config.sh
 make clean
 make
-./test "${BIN_DIR}twitter_sym.bin" "${BIN_DIR}" 0
+./test ../../../benchmark_utils/HepPh_sym.bin ../../../benchmark_utils/ 0
