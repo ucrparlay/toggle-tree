@@ -7,3 +7,6 @@ done
 for g in "${SPARSEGRAPHS[@]}"; do
     numactl -i all ./test "${BIN_DIR}${g}.bin"
 done
+for g in "${DIRECTEDGRAPHS[@]}"; do
+    numactl -i all ./test "${BIN_DIR}${g}.bin"
+done

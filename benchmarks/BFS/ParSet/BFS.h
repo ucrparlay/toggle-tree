@@ -29,8 +29,8 @@ parlay::sequence<uint32_t> BFS(Graph& G, size_t s=0) {
         }
         else {  // Direction Optimization
             active.for_each([&](size_t s) {
-                for (size_t i = G.offsets[s]; i < G.offsets[s+1]; i++) { 
-                    uint32_t d = G.edges[i].v;
+                for (size_t i = G.in_offsets[s]; i < G.in_offsets[s+1]; i++) { 
+                    uint32_t d = G.in_edges[i].v;
                     if (!active.contains(d)) { 
                         frontier.insert_next(s); 
                         return;

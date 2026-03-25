@@ -5,30 +5,6 @@
 export PARLAY_NUM_THREADS=$(nproc)
 BIN_DIR=/data/graphs/bin/
 ADJ_DIR=/data/graphs/pbbs/
-GRAPHS=(
-    twitter_sym
-    com-orkut_sym
-    friendster_sym
-    soc-LiveJournal1_sym
-    eu-2015-host_sym
-    sd_arc_sym
-    enwiki-2023_sym
-    arabic_sym
-    planet_sym
-    uk-2002_sym
-    europe_sym
-    indochina_sym
-    asia_sym
-    north-america_sym
-    us_sym
-    socfb-konect_sym
-    socfb-uci-uni_sym
-    africa_sym
-    hugebubbles-00020_sym
-    RoadUSA_sym
-    hugetrace-00020_sym
-    Germany_sym
-)
 DENSEGRAPHS=(
     twitter_sym
     com-orkut_sym
@@ -60,13 +36,16 @@ BIGGRAPHS=(
     hyperlink2014_sym
     hyperlink2012_sym
 )
-WEIGHTEDGRAPHS=(
-    hawaii_sym_wgh
-    alaska_sym_wgh
-    HT_10_sym_wgh
-    Household_10_sym_wgh
-    CHEM_10_sym_wgh
-    Germany_sym_wgh
-    com-orkut_sym_wgh18
-    RoadUSA_sym_wgh
+DIRECTEDGRAPHS=(
+    twitter
+    soc-LiveJournal1
+    eu-2015-host
+    sd_arc
+    enwiki-2023
+    planet
+    europe
+    asia
+    north-america
+    us
+    africa
 )

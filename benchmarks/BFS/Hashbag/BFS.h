@@ -46,8 +46,8 @@ parlay::sequence<uint32_t> BFS(Graph& G, size_t s = 0) {
         } 
         else {
             active.for_each([&](size_t u) {
-                for (size_t i = G.offsets[u]; i < G.offsets[u + 1]; i++) {
-                    uint32_t v = G.edges[i].v;
+                for (size_t i = G.in_offsets[u]; i < G.in_offsets[u + 1]; i++) {
+                    uint32_t v = G.in_edges[i].v;
                     if (!active.contains(v)) {
                         frontier.insert(u);
                         return;

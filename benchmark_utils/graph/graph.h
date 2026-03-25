@@ -150,12 +150,12 @@ struct Graph {
         auto parse_u32 = [&](char *l, char *r) -> uint32_t { uint32_t x = 0; while (l < r) x = x * 10 + (uint32_t)(*l++ - '0'); return x; };
         auto parse_w = [&](char *l, char *r) -> Wgh {
             if constexpr (std::is_same_v<Wgh, Empty>) return Wgh();
-            bool neg = false; if (l < r && (*l == '-' || *l == '+')) neg = (*l == '-'), ++l; double x = 0, frac = 0, base = 1;
+            else { bool neg = false; if (l < r && (*l == '-' || *l == '+')) neg = (*l == '-'), ++l; double x = 0, frac = 0, base = 1;
             while (l < r && *l >= '0' && *l <= '9') x = x * 10 + (*l++ - '0');
             if (l < r && *l == '.') { ++l; while (l < r && *l >= '0' && *l <= '9') frac = frac * 10 + (*l++ - '0'), base *= 10; x += frac / base; }
             if (l < r && (*l == 'e' || *l == 'E')) { ++l; bool eneg = false; if (l < r && (*l == '-' || *l == '+')) eneg = (*l == '-'), ++l; int e = 0; while (l < r && *l >= '0' && *l <= '9') e = e * 10 + (*l++ - '0'); x *= std::pow(10.0, eneg ? -e : e); }
             if (neg) x = -x;
-            return (Wgh)x;
+            return (Wgh)x; }
         };
         auto [h0,h1] = next_tok(p, ed); std::string_view header(h0, h1 - h0);
         auto [n0,n1] = next_tok(p, ed); n = parse_u64(n0, n1); auto [m0,m1] = next_tok(p, ed); m = parse_u64(m0, m1);
