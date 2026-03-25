@@ -14,8 +14,8 @@ int main(int argc, char** argv) {
     if (G.weighted) name += "_wgh";
     if (std::string(range) != "0") { name += range; }
     else { name += "log"; }
-    name += ".adj";
+    name += ".bin";
     std::cerr << "New graph name = " << name << "\n";
-    G.write_pbbs_format(name.c_str());
+    G.write_bin_format(name.c_str());
     return 0;
 }

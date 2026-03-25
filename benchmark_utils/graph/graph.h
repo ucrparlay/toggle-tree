@@ -20,7 +20,7 @@ struct Edge {
 
 template <class Wgh = Empty>
 struct Graph {
-    static_assert(std::is_same_v<Wgh, Empty> || std::is_same_v<Wgh, int32_t>, "Wgh must be Empty or int32_t");
+    static_assert(std::is_same_v<Wgh, Empty> || std::is_same_v<Wgh, int32_t> || std::is_same_v<Wgh, float>, "Wgh must be Empty or int32_t or float");
 
     std::string name;
     size_t n;
@@ -40,6 +40,7 @@ struct Graph {
         in_offsets(symmetrized ? offsets : in_offsets_seq),
         in_edges(symmetrized ? edges : in_edges_seq)
     {
+        parlay::internal::timer t; t.start(); 
         std::string str_filename(filename);
         std::string subfix = str_filename.substr(str_filename.find_last_of('.') + 1);
         if (subfix == "bin") { read_binary_format(filename); } 
@@ -47,8 +48,10 @@ struct Graph {
         else { std::cerr << "Error: Invalid graph extension or format: " << filename << "\n"; abort(); }
         name = str_filename.substr(0, str_filename.find_last_of('.'));
         if (name.find_last_of('/') != std::string::npos) { name = name.substr(name.find_last_of('/') + 1); }
-        if (!symmetrized) { make_inverse(); }
+        if constexpr (std::is_same_v<Wgh, float>) { if (!weighted) parlay::parallel_for(0, m, [&](size_t i){ edges[i].w = 1; }); weighted = true;}
         if constexpr (std::is_same_v<Wgh, int32_t>) { if (!weighted) make_random_weight(r); }
+        if (!symmetrized) { make_inverse(); }
+        double tt = t.stop(); // std::cerr << "Graph loading time: " << tt << "\n";
     }
 
     void make_inverse() {
@@ -66,9 +69,7 @@ struct Graph {
         in_edges_seq = parlay::sequence<Edge<Wgh>>(m);
         parlay::parallel_for(0, m, [&](size_t i) {
             in_edges_seq[i] = edgelist[i].second;
-            if (i == 0 || edgelist[i].first != edgelist[i - 1].first) {
-                in_offsets_seq[edgelist[i].first] = i;
-            }
+            if (i == 0 || edgelist[i].first != edgelist[i - 1].first) { in_offsets_seq[edgelist[i].first] = i; }
         });
         parlay::scan_inclusive_inplace(parlay::make_slice(in_offsets_seq.rbegin(), in_offsets_seq.rend()), parlay::minm<uint64_t>());
     }
@@ -83,36 +84,58 @@ struct Graph {
                 edges[i].w = 1 + ((parlay::hash32(u) ^ parlay::hash32(v)) % range);
             });
         });
-        if (!symmetrized) {
-            parlay::parallel_for(0, n, [&](uint32_t v) {
-                for (uint64_t j = in_offsets_seq[v]; j < in_offsets_seq[v + 1]; j++) {
-                    uint32_t u = in_edges_seq[j].v;
-                    in_edges_seq[j].w = 1 + ((parlay::hash32(u) ^ parlay::hash32(v)) % range);
-                }
-            });
-        }
     }
 
     void read_binary_format(char const *filename) {
         struct stat sb;
-        int fd = open(filename, O_RDONLY);
-        if (fd == -1 || fstat(fd, &sb) == -1) { std::cerr << "Error: Failed in opening file " << filename << "\n"; abort(); }
-        char *data = static_cast<char *>(mmap(0, sb.st_size, PROT_READ, MAP_PRIVATE, fd, 0));
-        size_t len = sb.st_size;
-        n = reinterpret_cast<uint64_t *>(data)[0];
-        m = reinterpret_cast<uint64_t *>(data)[1];
-        if (n == 0) { std::cerr << "Error: Failed in reading graph.\n"; abort(); }
-        assert(reinterpret_cast<uint64_t *>(data)[2] == (n + 1) * 8 + m * 4 + 3 * 8 && "File size mismatch for out-edge binary");
-        offsets = parlay::sequence<uint64_t>::uninitialized(n + 1);
-        edges = parlay::sequence<Edge<Wgh>>::uninitialized(m);
-        parlay::parallel_for(0, n + 1, [&](size_t i) {
-            offsets[i] = reinterpret_cast<uint64_t *>(data + 3 * 8)[i];
-        });
-        parlay::parallel_for(0, m, [&](size_t i) {
-            edges[i].v = reinterpret_cast<uint32_t *>(data + 3 * 8 + (n + 1) * 8)[i];
-        });
-        munmap(data, len);
+        int fd=open(filename,O_RDONLY);
+        if(fd==-1||fstat(fd,&sb)==-1){ std::cerr<<"Error: Failed in opening file "<<filename<<"\n"; abort(); }
+        char *data=(char*)mmap(0,sb.st_size,PROT_READ,MAP_PRIVATE,fd,0);
+        size_t len=sb.st_size;
+        n=((uint64_t*)data)[0];
+        m=((uint64_t*)data)[1];
+        uint64_t bytes=((uint64_t*)data)[2];
+        offsets=parlay::sequence<uint64_t>::uninitialized(n+1);
+        edges=parlay::sequence<Edge<Wgh>>::uninitialized(m);
+        parlay::parallel_for(0,n+1,[&](size_t i){ offsets[i]=((uint64_t*)(data+24))[i]; });
+        char *ep=data+24+(n+1)*8;
+        if (bytes==24+(n+1)*8+m*4) {
+            parlay::parallel_for(0,m,[&](size_t i){ edges[i].v=((uint32_t*)(data + 3 * 8 + (n + 1) * 8))[i]; });
+            weighted=false;
+        }
+        else if (bytes==24+(n+1)*8+m*8) {
+            struct X{ Wgh w; uint32_t v; }; static_assert(sizeof(X)==8);
+            parlay::parallel_for(0,m,[&](size_t i){
+                auto &x=((X*)(data + 3 * 8 + (n + 1) * 8))[i]; edges[i].v=x.v; edges[i].w=x.w;
+            });
+            weighted=true;
+        }
+        else { std::cerr << "Error: Incorrect file format.\n"; abort(); }
+        munmap(data,len);
         close(fd);
+    }
+
+    void write_bin_format(char const *filename) const {
+        std::ofstream out(filename,std::ios::binary);
+        if(!out){ std::cerr<<"Error: Cannot open output file "<<filename<<"\n"; abort(); }
+        uint64_t hdr[3];
+        hdr[0]=n;
+        hdr[1]=m;
+        if constexpr(std::is_same_v<Wgh,Empty>) hdr[2]=3*8+(n+1)*8+m*4;
+        else hdr[2]=3*8+(n+1)*8+m*8;
+        out.write((char*)hdr,3*8);
+        out.write((char*)offsets.begin(),(std::streamsize)((n+1)*8));
+        if constexpr(std::is_same_v<Wgh,Empty>){
+            auto to=parlay::sequence<uint32_t>::uninitialized(m);
+            parlay::parallel_for(0,m,[&](size_t i){ to[i]=edges[i].v; });
+            out.write((char*)to.begin(),(std::streamsize)(m*4));
+        }else{
+            struct X{ Wgh w; uint32_t v; }; 
+            auto ew=parlay::sequence<X>::uninitialized(m);
+            parlay::parallel_for(0,m,[&](size_t i){ ew[i]={edges[i].w,edges[i].v}; });
+            out.write((char*)ew.begin(),(std::streamsize)(m*8));
+        }
+        out.close();
     }
 
     void read_pbbs_format(char const *filename) {
@@ -125,7 +148,15 @@ struct Graph {
         auto next_tok = [&](char *&x, char *lim) -> std::pair<char*,char*> { while (x < lim && issp(*x)) ++x; char *l = x; while (x < lim && !issp(*x)) ++x; return {l, x}; };
         auto parse_u64 = [&](char *l, char *r) -> uint64_t { uint64_t x = 0; while (l < r) x = x * 10 + (uint64_t)(*l++ - '0'); return x; };
         auto parse_u32 = [&](char *l, char *r) -> uint32_t { uint32_t x = 0; while (l < r) x = x * 10 + (uint32_t)(*l++ - '0'); return x; };
-        auto parse_w = [&](char *l, char *r) -> Wgh { if constexpr (std::is_same_v<Wgh, Empty>) return Wgh(); else { bool neg = false; if (l < r && *l == '-') neg = true, ++l; int64_t x = 0; while (l < r) x = x * 10 + (*l++ - '0'); return (Wgh)(neg ? -x : x); } };
+        auto parse_w = [&](char *l, char *r) -> Wgh {
+            if constexpr (std::is_same_v<Wgh, Empty>) return Wgh();
+            bool neg = false; if (l < r && (*l == '-' || *l == '+')) neg = (*l == '-'), ++l; double x = 0, frac = 0, base = 1;
+            while (l < r && *l >= '0' && *l <= '9') x = x * 10 + (*l++ - '0');
+            if (l < r && *l == '.') { ++l; while (l < r && *l >= '0' && *l <= '9') frac = frac * 10 + (*l++ - '0'), base *= 10; x += frac / base; }
+            if (l < r && (*l == 'e' || *l == 'E')) { ++l; bool eneg = false; if (l < r && (*l == '-' || *l == '+')) eneg = (*l == '-'), ++l; int e = 0; while (l < r && *l >= '0' && *l <= '9') e = e * 10 + (*l++ - '0'); x *= std::pow(10.0, eneg ? -e : e); }
+            if (neg) x = -x;
+            return (Wgh)x;
+        };
         auto [h0,h1] = next_tok(p, ed); std::string_view header(h0, h1 - h0);
         auto [n0,n1] = next_tok(p, ed); n = parse_u64(n0, n1); auto [m0,m1] = next_tok(p, ed); m = parse_u64(m0, m1);
         if (!n) { std::cerr << "Error: Failed in reading graph.\n"; abort(); }
@@ -144,12 +175,11 @@ struct Graph {
     void write_pbbs_format(char const *filename) {
         std::ofstream out(filename);
         if (!out) { std::cerr << "Error: Cannot open output file " << filename << "\n"; abort(); }
-        out << "WeightedAdjacencyGraph\n";
-        out << n << '\n';
-        out << m << '\n';
+        if constexpr (!std::is_same_v<Wgh, Empty>) out << "Weighted";
+        out << "AdjacencyGraph\n" << n << '\n' << m << '\n';
         for (size_t i = 0; i < n; i++) out << offsets[i] << '\n';
         for (size_t i = 0; i < m; i++) out << edges[i].v << '\n';
-        for (size_t i = 0; i < m; i++) out << edges[i].w << '\n';
+        if constexpr (!std::is_same_v<Wgh, Empty>) for (size_t i = 0; i < m; i++) out << edges[i].w << '\n';
     }
 
 };
