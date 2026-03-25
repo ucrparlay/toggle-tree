@@ -115,7 +115,7 @@ struct Graph {
         close(fd);
     }
 
-    void write_bin_format(char const *filename) const {
+    void write_binary_format(char const *filename) const {
         std::ofstream out(filename,std::ios::binary);
         if(!out){ std::cerr<<"Error: Cannot open output file "<<filename<<"\n"; abort(); }
         uint64_t hdr[3];

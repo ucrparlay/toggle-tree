@@ -16,6 +16,6 @@ int main(int argc, char** argv) {
     else { name += "log"; }
     name += ".bin";
     std::cerr << "New graph name = " << name << "\n";
-    G.write_bin_format(name.c_str());
+    G.write_binary_format(name.c_str());
     return 0;
 }
