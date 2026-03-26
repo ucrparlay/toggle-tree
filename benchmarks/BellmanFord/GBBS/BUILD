@@ -9,7 +9,7 @@ cc_library(
     hdrs = ["BellmanFord.h"],
     deps = [
         "@gbbs//gbbs",
-        "@benchmark_utils//:utils",
+        "@verify//:verify",
     ],
 )
 

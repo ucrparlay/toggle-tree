@@ -10,14 +10,14 @@ constexpr int NUM_SRC = 5;
 constexpr int NUM_ROUND = 3;
 
 template <class Algo, class Graph, class NodeId = typename Graph::NodeId>
-void run(Algo &algo, const Graph &G, bool verify, NodeId s, const char* input_path) {
+void run(Algo &algo, const Graph &G, bool verify, NodeId num_rounds, const char* input_path) {
   //printf("source %-10d\n", s);
   auto perm = parlay::random_permutation<uint32_t>(G.n);
     parlay::internal::timer t; double tt = 0, ttt = 0;
     t.start();
     parlay::sequence<uint32_t> dist;
-    for (int i = 0; i < 3; i++) {
-        auto s = perm[i];
+    for (int i = 0; i < (int)num_rounds; i++) {
+        auto s = perm[num_rounds - i - 1];
         std::cout << "Round " << i + 1 << "  source = " << s;
         t.start();
         dist = algo.bfs(s);
@@ -28,27 +28,9 @@ void run(Algo &algo, const Graph &G, bool verify, NodeId s, const char* input_pa
         std::cout << " time = " << tt << " sec\n";
         ttt += tt;
     }
-    ttt /= 3;
+    ttt /= num_rounds;
     process_result(nullptr, input_path, ttt, dist, true);  
-
-  if (verify) {
-    printf("Running verifier...\n");
-    Seq_BFS verifier(G);
-    auto exp_dist = verifier.bfs(s);
-    assert(dist == exp_dist);
-    printf("Passed!\n");
-  }
   printf("\n");
-}
-
-template <class Algo, class Graph>
-void run(Algo &algo, const Graph &G, bool verify, const char* input_path) {
-  using NodeId = typename Graph::NodeId;
-  //for (int v = 0; v < NUM_SRC; v++) {
-    //NodeId s = hash32(v) % G.n;
-    NodeId s = 0;
-    run(algo, G, verify, s, input_path);
-  //}
 }
 
 int main(int argc, char *argv[]) {
@@ -66,8 +48,9 @@ int main(int argc, char *argv[]) {
   char const *input_path = nullptr;
   bool symmetrized = false;
   bool verify = false;
-  uint32_t source = UINT_MAX;
-  while ((c = getopt(argc, argv, "i:svr:")) != -1) {
+  uint32_t source = 0;
+  uint32_t num_rounds = 3;
+  while ((c = getopt(argc, argv, "i:svrn:")) != -1) {
     switch (c) {
       case 'i':
         input_path = optarg;
@@ -80,6 +63,8 @@ int main(int argc, char *argv[]) {
         break;
       case 'r':
         source = atol(optarg);
+      case 'n':
+        num_rounds = atol(optarg);
     }
   }
 
@@ -95,10 +80,6 @@ int main(int argc, char *argv[]) {
           input_path, G.n, G.m, NUM_SRC, NUM_ROUND);
 
   BFS solver(G);
-  if (source == UINT_MAX) {
-    run(solver, G, verify, input_path);
-  } else {
-    run(solver, G, verify, source, input_path);
-  }
+  run(solver, G, verify, num_rounds, input_path);
   return 0;
 }
