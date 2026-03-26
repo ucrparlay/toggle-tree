@@ -23,7 +23,7 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
                 ParSet::adaptive_for(G.offsets[s], G.offsets[s + 1], [&](size_t i) {
                     uint32_t d = G.edges[i].v;
                     if (active.contains(d) && __atomic_fetch_sub(&D[d], 1, __ATOMIC_RELAXED) == k+1) {
-                        active.remove(d); 
+                        active.remove(d); result[d] = k;
                         ParSet::adaptive_for(G.offsets[d], G.offsets[d + 1], [&](size_t j) {
                             uint32_t x = G.edges[j].v;
                             if (active.contains(x) && __atomic_fetch_sub(&D[x], 1, __ATOMIC_RELAXED) == k+1) {
