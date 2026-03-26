@@ -31,7 +31,7 @@ double wBFS_runner(Graph& G, commandLine P) {
     }
     ttt /= num_rounds;
 
-    GraphIO::process_result(dumppath, P.getArgument(0), ttt, result, true, "../../benchmarks/BFS");
+    GraphIO::process_result(dumppath, P.getArgument(0), ttt, result, true, "../../benchmarks/WeightedBFS");
     std::exit(0);
     return ttt;
 }

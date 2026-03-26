@@ -1,9 +1,10 @@
 cd ../../benchmarks
 
-#rm -f BFS/*.csv
-#rm -f Coloring/*.csv
-#rm -f KCore/*.csv
-#rm -f BellmanFord/*.csv
+rm -f BFS/*.csv
+rm -f Coloring/*.csv
+rm -f KCore/*.csv
+rm -f BellmanFord/*.csv
+rm -f WeightedBFS/*.csv
 
 cd BFS/ParSet && bash ./bench.sh && cd ../..
 cd BFS/Hashbag && bash ./bench.sh && cd ../..
