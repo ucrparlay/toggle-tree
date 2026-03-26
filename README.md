@@ -69,36 +69,3 @@ After running benchmarks, three `.csv` files will be generated.
 `verify.csv` contains results of using the same hash function on both outputs of GBBS and ParSet. This is intended as a fast sanity check, since writing and comparing full outputs can be impractical at scale. The hash function implementation is in `benchmark_utils/graph/verify.h`. Bitwise verification is also provided elsewhere.
 
 `max.csv` contains the max result of the output sequence, which indicates the number of rounds in BFS/Coloring/KCore.
-
-## Usage
-
-ParSet is a set, not a sequence. It lets you reason about element membership directly and avoid the cost of packing.
-
-The source code in `active.h` and `frontier.h` are clear and make usage easy to understand, so only a few explanations are provided here.
-
-### Linking
-
-ParSet does not include a runtime; you must link parlaylib yourself.
-The vendored parlaylib in `benchmark_utils` is only used for benchmarking.
-ParSet is known to work with parlaylib commit: 51017699dcc421f80479cdb238d3092233ad0d26.
-An example is shown in:
-```bash
-[benchmarks/BFS/ParSet]$ cat Makefile
-```
-
-### Active & Frontier
-ParSet provides two classes: Active & Frontier.
-Active contains one set, and its elements are not removed after visiting by default.
-On the contrary, Frontier contains two sets, enabling insertion for the next round. 
-Besides, Frontier's elements are removed by default after visiting.
-
-### Insert & Remove
-ParSet is a set, you can nsert the same element multiple times, and you will only see one element when you visit it.
-Do NOT call insert and remove on a same set within the same round! That is NOT supported by ParSet, and no parallel graph algorithm is found that requires this kind of operation.
-Frontier has two sets, so it is supported to call for_each on Frontier while calling insert_next, since they are operated on different sets.
-
-### For Each & Pack
-ParSet has good performance because it avoids packing. Pack is implemented only for special needs, while for_each is recommended to be used in common.
-
-### Edge Parallel
-A simple degree-based strategy is used for parallelizing a single vertex’s adjacency range. For ranges shorter than 256, adaptive_for process sequentially to avoid scheduler overhead. work is parallelized either with parlay::parallel_for (in adaptive_for) or with recursive parlay::parallel_do splitting (in helper routines like adaptive_sum/min/exist) until the range is < 256. No fully load-balanced edgemap is implemented; Parlay’s work-stealing scheduler is relied on to smooth imbalance.
