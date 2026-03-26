@@ -9,7 +9,7 @@ cc_library(
     hdrs = ["GraphColoring.h"],
     deps = [
         "@gbbs//gbbs",
-        "@benchmark_utils//:utils",
+        "@verify//:verify",
     ],
 )
 

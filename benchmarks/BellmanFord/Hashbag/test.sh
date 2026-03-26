@@ -1,5 +1,5 @@
 make clean
 make
-numactl -i all ./test ../../../benchmark_utils/HepPh_sym_wghlog.bin
-#source ../../../benchmark_utils/scripts/config.sh
-#numactl -i all ./test "${BIN_DIR}twitter_sym_wghlog.bin"
+numactl -i all ./test ../../../include/GraphIO/example/FiveStarRedFlag_sym.bin 1 
+# source ../../../benchmark_utils/scripts/config.sh
+# numactl -i all ./test "${BIN_DIR}twitter_sym_wghlog.bin" "${NUM_ROUNDS}"

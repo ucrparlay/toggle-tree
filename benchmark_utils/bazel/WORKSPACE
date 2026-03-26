@@ -11,12 +11,12 @@ git_repository(
     commit = "bd48872385ad907010417bfa939f4fca04e563b8",
 )
 
-local_repository(name = "benchmark_utils", path = "../../benchmark_utils/graph",)
-local_repository(name = "gbbs_bfs", path = "../../benchmarks/BFS/GBBS",)
+local_repository(name = "verify", path = "../../include/GraphIO/detail",)
+local_repository(name = "GBBS_BFS", path = "../../benchmarks/BFS/GBBS",)
 local_repository(name = "gbbs_sparsebfs", path = "../../benchmarks/WeightedBFS/GBBS",)
-local_repository(name = "gbbs_weightedbfs", path = "../../benchmarks/_supplementary/BFS/GBBS",)
+local_repository(name = "gbbs_wbfs", path = "../../benchmarks/_supplementary/wBFSTournament/GBBS",)
 local_repository(name = "gbbs_mis", path = "../../benchmarks/MIS/GBBS",)
-local_repository(name = "gbbs_kcore", path = "../../benchmarks/KCore/GBBS",)
-local_repository(name = "gbbs_coloring", path = "../../benchmarks/Coloring/GBBS",)
+local_repository(name = "GBBS_KCore", path = "../../benchmarks/KCore/GBBS",)
+local_repository(name = "GBBS_Coloring", path = "../../benchmarks/Coloring/GBBS",)
 local_repository(name = "gbbs_coloring_round", path = "../../benchmarks/_supplementary/ColoringRound/GBBS",)
 local_repository(name = "gbbs_bellman_ford", path = "../../benchmarks/BellmanFord/GBBS",)

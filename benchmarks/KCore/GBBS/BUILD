@@ -10,7 +10,7 @@ cc_library(
     deps = [
         "@gbbs//gbbs",
         "@gbbs//gbbs:julienne",
-        "@benchmark_utils//:utils",
+        "@verify//:verify",
     ],
 )
 

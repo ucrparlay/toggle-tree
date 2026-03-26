@@ -6,7 +6,7 @@ cc_library(
     hdrs = ["BFS.h"],
     deps = [
         "@gbbs//gbbs",
-        "@benchmark_utils//:utils",
+        "@verify//:verify",
     ],
 )
 
