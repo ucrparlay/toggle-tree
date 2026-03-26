@@ -10,7 +10,7 @@ cc_library(
     deps = [
         "@gbbs//gbbs",
         "@gbbs//gbbs:bucket",
-        "@Graph//:Graph",
+        "@verify//:verify",
     ],
 )
 

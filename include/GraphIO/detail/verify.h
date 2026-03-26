@@ -154,7 +154,7 @@ void process_result(const char* dumppath, const char* filepath, double t, T& res
         }
     }
     
-    if (dumppath != nullptr && std::strcmp(dumppath, "disabled") != 0) {
+    if (dumppath != nullptr && std::string(dumppath) != "disabled") {
         std::ofstream out(dumppath, std::ios::out|std::ios::trunc);
         for(size_t i=0;i<result.size();++i){ out<<result[i]<<","; }
         out<<"\n";

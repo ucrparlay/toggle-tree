@@ -13,10 +13,8 @@ git_repository(
 
 local_repository(name = "verify", path = "../../include/GraphIO/detail",)
 local_repository(name = "GBBS_BFS", path = "../../benchmarks/BFS/GBBS",)
-local_repository(name = "gbbs_sparsebfs", path = "../../benchmarks/WeightedBFS/GBBS",)
-local_repository(name = "gbbs_wbfs", path = "../../benchmarks/_supplementary/wBFSTournament/GBBS",)
-local_repository(name = "gbbs_mis", path = "../../benchmarks/MIS/GBBS",)
+local_repository(name = "GBBS_WeightedBFS", path = "../../benchmarks/WeightedBFS/GBBS",)
 local_repository(name = "GBBS_KCore", path = "../../benchmarks/KCore/GBBS",)
 local_repository(name = "GBBS_Coloring", path = "../../benchmarks/Coloring/GBBS",)
-local_repository(name = "gbbs_coloring_round", path = "../../benchmarks/_supplementary/ColoringRound/GBBS",)
+local_repository(name = "GBBS_ColoringRound", path = "../../benchmarks/_supplementary/ColoringRound/GBBS",)
 local_repository(name = "GBBS_BellmanFord", path = "../../benchmarks/BellmanFord/GBBS",)
