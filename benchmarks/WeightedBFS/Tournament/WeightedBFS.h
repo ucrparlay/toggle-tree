@@ -18,7 +18,6 @@ parlay::sequence<int32_t> WeightedBFS(Graph& G, size_t source=0) {
     for (uint32_t round = 0;  ;round++) {
         if(active.empty()) { break; }
         frontier.advance_to_next();
-        frontier.repair(active, dist);
         active.extract_min(frontier, dist);
         frontier.advance_to_next();
         frontier.for_each([&](uint32_t s) { 

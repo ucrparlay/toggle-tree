@@ -14,10 +14,18 @@ parlay::sequence<int32_t> WeightedBFS(Graph& G, size_t source=0) {
     auto frontier = ParSet::Frontier(n);
     auto dist = parlay::sequence<int32_t>(n, INT32_MAX); dist[source] = 0;
     active.insert(source); 
-    for (uint32_t round = 0; ;round++) {
-        if(active.empty()) { break; }
-        active.adaptive_reduce_min(dist, frontier);
-        frontier.advance_to_next();
+
+    uint32_t cur_min = UINT32_MAX, last_min = UINT32_MAX;
+    for (uint32_t round = 0; !active.empty(); round++) {
+        if (cur_min - last_min == 1) { 
+            active.for_each([&] (size_t s) { if (dist[s] == cur_min + 1) { active.remove(s); frontier.insert_next(s); }}); 
+        }
+        last_min = cur_min; 
+        cur_min = frontier.advance_to_next() ? cur_min++ : active.reduce_min(dist);
+        if (frontier.empty()) { 
+            active.for_each([&] (size_t s) { if (dist[s] == cur_min) { active.remove(s); frontier.insert_next(s); }});
+            frontier.advance_to_next();
+        }
         frontier.for_each([&](uint32_t s) { 
             int32_t dist_s = dist[s];
             ParSet::adaptive_for(G.offsets[s], G.offsets[s + 1], [&](size_t i) {
