@@ -19,8 +19,8 @@ struct Frontier {
     inline void remove_next(size_t i) noexcept { next.remove(i); }
     inline bool advance_to_next() noexcept { std::swap(frontier, next); return !empty(); }
     
-    template <bool Remove = true, size_t Gran = 8, class F>
-    void for_each(F&& f) { frontier.for_each<Remove, Gran>(f); }
+    template <bool Remove = true, class F>
+    void for_each(F&& f) { frontier.for_each<Remove, 8>(f); }
 
     template<class T, auto Identity, class F, class Combine>
     inline T reduce(F&& f, Combine&& combine){ return frontier.reduce<T, Identity>(f, combine); }
