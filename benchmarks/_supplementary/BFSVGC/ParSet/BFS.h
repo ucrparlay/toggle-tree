@@ -65,6 +65,7 @@ parlay::sequence<uint32_t> BFS(Graph& G, size_t s=0) {
         }
         else {  // Local Search
             if (!frontier.advance_to_next()) break;
+            static const size_t gra = 4;
             frontier.for_each([&](size_t s) {
                 parlay::parallel_for(G.offsets[s], G.offsets[s+1], [&](uint32_t j) { 
                     uint32_t d = G.edges[j].v;
@@ -83,15 +84,15 @@ parlay::sequence<uint32_t> BFS(Graph& G, size_t s=0) {
                                                     if (write_min(result[y], round + 4)) { 
                                                         frontier.insert_next(y); 
                                                     }
-                                                }, 256);
+                                                }, gra);
                                             }
-                                        }, 256);
+                                        }, gra);
                                     }
-                                }, 256);
+                                }, gra);
                             }
-                        }, 256);
+                        }, gra);
                     }
-                }, 256);
+                }, gra);
             });
             round+=4;
         }
