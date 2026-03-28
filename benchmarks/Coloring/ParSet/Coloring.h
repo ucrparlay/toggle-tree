@@ -30,7 +30,7 @@ parlay::sequence<uint32_t> Coloring(Graph& G) {
                 size_t l = i<<14, r = ((i+1)<<14)<deg?((i+1)<<14):deg;
                 __builtin_memset(bits+l, 0, r-l);
             });
-            ParSet::adaptive_for(G.offsets[s], G.offsets[s + 1], [&](size_t i) {
+            parlay::parallel_for(G.offsets[s], G.offsets[s + 1], [&](size_t i) {
                 uint32_t d = G.edges[i].v;
                 if (result[d] == UINT32_MAX) {
                     if (__atomic_fetch_sub(&priorities[d], 1, __ATOMIC_RELAXED) == 1) { frontier.insert_next(d);  }
@@ -38,7 +38,7 @@ parlay::sequence<uint32_t> Coloring(Graph& G) {
                 else {
                     if (result[d] < deg) { bits[result[d]] = 1; }
                 }
-            });
+            }, 256);
             uint32_t chosen = UINT32_MAX;
             for (uint32_t i = 0; i < deg; ++i) {
                 if (bits[i] == 0) { chosen = i; break; }

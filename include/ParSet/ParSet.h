@@ -3,4 +3,4 @@
 // namespace is ParSet::
 #include "detail/frontier.h"
 #include "detail/active.h"
-#include "detail/edge_parallel.h"
+#include "detail/utils/atomic_operation.h"

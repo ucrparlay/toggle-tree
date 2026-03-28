@@ -22,13 +22,13 @@ parlay::sequence<int32_t> WeightedBFS(Graph& G, size_t source=0) {
         frontier.advance_to_next();
         frontier.for_each([&](uint32_t s) { 
             int32_t dist_s = dist[s];
-            ParSet::adaptive_for(G.offsets[s], G.offsets[s + 1], [&](size_t i) {
+            parlay::parallel_for(G.offsets[s], G.offsets[s + 1], [&](size_t i) {
                 uint32_t d = G.edges[i].v;
                 int32_t w = G.edges[i].w;
                 if (dist[d] > dist_s + w && write_min(dist[d], dist_s + w)) {
                     active.insert(d); frontier.insert_next(d);
                 }
-            });
+            }, 256);
         });
         t3 += t.stop();
     }

@@ -19,12 +19,12 @@ parlay::sequence<uint32_t> BFS(Graph& G, size_t s=0) {
             }
             frontier.for_each([&](uint32_t s) { 
                 result[s] = round;
-                ParSet::adaptive_for(G.offsets[s], G.offsets[s+1], [&](size_t i) { 
-                    uint32_t d = G.edges[i].v;
+                parlay::parallel_for(G.offsets[s], G.offsets[s+1], [&](size_t i) { 
+                    int32_t d = G.edges[i].v;
                     if (active.contains(d)) {
                         active.remove(d); frontier.insert_next(d);
                     }
-                });
+                }, 256);
             });
         }
         else {  // Direction Optimization

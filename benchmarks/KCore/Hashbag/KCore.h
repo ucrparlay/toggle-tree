@@ -26,14 +26,14 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
             parlay::parallel_for(0, frt_size, [&](uint32_t i) {
                 uint32_t s = frt[i];
                 result[s] = k;
-                ParSet::adaptive_for(G.offsets[s], G.offsets[s + 1], [&](size_t j) {
+                parlay::parallel_for(G.offsets[s], G.offsets[s + 1], [&](size_t j) {
                     uint32_t d = G.edges[j].v;
                     if (active.contains(d)) {
                         if (__atomic_fetch_sub(&D[d], 1, __ATOMIC_RELAXED) == k+1) {
                             active.remove(d); frontier.insert(d);
                         }
                     }
-                });
+                }, 256);
             });
         }
     }

@@ -36,12 +36,12 @@ parlay::sequence<uint32_t> BFS(Graph& G, size_t s = 0) {
             parlay::parallel_for(0, frontier_size, [&](size_t i) {
                 uint32_t u = frontier_vertices[i];
                 result[u] = round;
-                ParSet::adaptive_for(G.offsets[u], G.offsets[u + 1], [&](size_t j) {
+                parlay::parallel_for(G.offsets[u], G.offsets[u + 1], [&](size_t j) {
                     uint32_t v = G.edges[j].v;
                     if (active.active.try_remove(v)) {
                         frontier.insert(v);
                     }
-                });
+                }, 256);
             });
         } 
         else {
