@@ -1,6 +1,6 @@
-# ParSet: Parallel Vertex Set
+# GraphIO
 
-Provides high-performance, composable parallel data structures with set semantics for shared-memory graph algorithms.
+Provides graph loader, compatible with ParSet.
 
 Requires: Linux (x86_64), GCC >= 10.
 

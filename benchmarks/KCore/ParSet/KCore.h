@@ -12,12 +12,11 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
         return G.offsets[s+1] - G.offsets[s]; 
     });
 
-    parlay::internal::timer t; double t0 = 0; uint64_t acs = 0;
+    parlay::internal::timer t; double t0 = 0;
     while (!active.empty()) {
         t.start();
-        acs += active.reduce_vertex();
-        t0 += t.stop(); 
         uint32_t k = active.reduce_min(D);
+        t0 += t.stop(); 
         active.for_each([&](uint32_t s) { 
             if (D[s] == k) { active.remove(s); frontier.insert_next(s);}
         });
@@ -35,7 +34,7 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
             });
         }
     }
-    std::cerr << "t0=" << t0 << "  acs=" << acs << "\n";
+    std::cerr << "t0=" << t0 << "\n";
     
     return result;
 }

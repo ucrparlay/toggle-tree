@@ -26,22 +26,24 @@ struct Frontier {
     inline T reduce(F&& f, Combine&& combine){ return frontier.reduce<T, Identity>(f, combine); }
 
     inline uint64_t reduce_vertex(){ return frontier.reduce_vertex(); }
-    template <class Graph> inline uint64_t reduce_edge(Graph& G){ 
+    template <class Graph> inline uint64_t reduce_edge(const Graph& G){ 
         return reduce<uint64_t, 0>(
             [&] (size_t i) { return G.offsets[i+1] - G.offsets[i]; },
             [&] (uint64_t l, uint64_t r) { return l + r; }
         );
     }
-    template<class T> inline T reduce_min(parlay::sequence<T>& seq){ 
-        return reduce<T, std::numeric_limits<T>::max()>(
-            [&] (size_t i) { return seq[i]; },
-            [&] (T l, T r) { return (l > r) ? r : l; }
+    template<class Sequence> inline auto reduce_min(const Sequence& sequence){
+        using T = typename Sequence::value_type;
+        return reduce<T,std::numeric_limits<T>::max()>(
+            [&] (size_t i) { return sequence[i]; },
+            [&] (T l,T r) { return (l > r) ? r : l; }
         );
     }
-    template<class T> inline T reduce_max(parlay::sequence<T>& seq){ 
-        return reduce<T, std::numeric_limits<T>::min()>(
-            [&] (size_t i) { return seq[i]; },
-            [&] (T l, T r) { return (l > r) ? l : r; }
+    template<class Sequence> inline auto reduce_max(const Sequence& sequence){
+        using T = typename Sequence::value_type;
+        return reduce<T,std::numeric_limits<T>::min()>(
+            [&] (size_t i) { return sequence[i]; },
+            [&] (T l,T r) { return (l > r) ? l : r; }
         );
     }
 };

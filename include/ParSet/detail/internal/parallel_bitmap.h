@@ -19,7 +19,7 @@ struct ParallelBitmap {
 
     ParallelBitmap(size_t n, bool init_value) {
         uint64_t length = n;
-        for (int i = 5; i >= 0; i--) {
+        for (int8_t i=5; i>=0; i--) {
             bitmap[i] = std::vector<uint64_t>((length + 63) >> 6, init_value ? UINT64_MAX : 0);
             if (init_value && (length & 63)) bitmap[i].back() = (1ULL << (length & 63)) - 1;
             length = (length + 63) >> 6;
@@ -79,7 +79,7 @@ struct ParallelBitmap {
     }
 
     template<class T, auto Identity, class F, class Combine>
-    inline T reduce(int8_t layer, uint64_t base, F&& f, Combine&& combine){
+    inline T reduce(int8_t layer, uint64_t base, F&& f, Combine&& combine) {
         uint64_t mask = bitmap[layer][idx(layer,base)];
         T best = Identity;
         if (layer == 4) {
@@ -101,12 +101,12 @@ struct ParallelBitmap {
         return best;
     }
     template<class T, auto Identity, class F, class Combine>
-    inline T reduce(F&& f, Combine&& combine){
+    inline T reduce(F&& f, Combine&& combine) {
         if (empty()) return Identity;
         return reduce<T, Identity>(0, 0, f, combine);
     }
 
-    inline uint64_t reduce_vertex(int8_t layer, uint64_t base){
+    inline uint64_t reduce_vertex(int8_t layer, uint64_t base) {
         uint64_t mask = bitmap[layer][idx(layer,base)];
         uint64_t sum = 0;
         if (layer == 3) {
