@@ -1,12 +1,6 @@
 #pragma once
 #include <ParSet/ParSet.h>
 
-static inline bool write_min(int32_t& ref, int32_t v){
-    int32_t old = ref;
-    while (old > v && !__atomic_compare_exchange_n(&ref, &old, v, 1, __ATOMIC_RELAXED, __ATOMIC_RELAXED));
-    return old > v;
-}
-
 template <class Graph>
 parlay::sequence<int32_t> WeightedBFS(Graph& G, size_t source=0) {
     const size_t n = G.n;
@@ -29,7 +23,11 @@ parlay::sequence<int32_t> WeightedBFS(Graph& G, size_t source=0) {
         frontier.for_each([&](uint32_t s) { 
             int32_t dist_s = dist[s];
             parlay::parallel_for(G.offsets[s], G.offsets[s + 1], [&](size_t i) {
-                tree.update(G.edges[i].v, dist_s + G.edges[i].w);
+                uint32_t d = G.edges[i].v;
+                int32_t w = G.edges[i].w;
+                if (dist[d] > dist_s + w && ParSet::write_min(dist[d], dist_s + w)) {
+                    active.insert(d);
+                }
             }, 256);
         });
     }
