@@ -3,6 +3,7 @@
 # change BIN_DIR & ADJ_DIR to your diectory containing graphs, 
 # and configure PARLAY_NUM_THREADS as you wish.
 export PARLAY_NUM_THREADS=$(nproc)
+NUM_ROUNDS=3
 BIN_DIR=/data/graphs/bin/
 ADJ_DIR=/data/graphs/pbbs/
 DENSEGRAPHS=(
@@ -35,17 +36,4 @@ BIGGRAPHS=(
     clueweb_sym
     hyperlink2014_sym
     hyperlink2012_sym
-)
-DIRECTEDGRAPHS=(
-    twitter
-    soc-LiveJournal1
-    eu-2015-host
-    sd_arc
-    enwiki-2023
-    planet
-    europe
-    asia
-    north-america
-    us
-    africa
 )

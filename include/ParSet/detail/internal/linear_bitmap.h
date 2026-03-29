@@ -12,10 +12,8 @@
 namespace ParSet { namespace internal {
 
 struct LinearBitmap {
-    size_t n;
-    size_t W;
     std::vector<uint64_t> bitmap;
-    LinearBitmap(size_t _n, bool init_value = 0): n(_n), W((n + 63) / 64) {
+    LinearBitmap(size_t n, bool init_value = 0) {
         bitmap = std::vector<uint64_t>((n + 63) >> 6, init_value ? UINT64_MAX : 0);
         if (init_value && n & 63) bitmap.back() = (1ULL << (n & 63)) - 1;
     }
