@@ -20,7 +20,7 @@ private:
     using T = typename Sequence::value_type;
     struct Node { uint64_t bitmap; uint64_t dirty; T augval; };
     Sequence& sequence;
-    std::vector<Node> tree[6];
+    parlay::sequence<parlay::sequence<Node>> tree;
     static constexpr uint64_t off(int32_t i) noexcept { return 6*(6-i); }
     static constexpr uint64_t idx(int32_t i, uint64_t base) noexcept { return base >> off(i); }
     static constexpr uint64_t fnd(int32_t i, uint64_t mask) noexcept { return __builtin_ctzll(__builtin_ia32_pdep_di(1ULL << i, mask)); }
@@ -82,9 +82,10 @@ private:
     
 public:
     TournamentTree(Sequence& _sequence): sequence(_sequence) {
+        tree = parlay::sequence<parlay::sequence<Node>>(6);
         uint64_t length = sequence.size();
         for (int32_t i=5; i>=0; i--) {
-            tree[i] = std::vector<Node>((length + 63) >> 6, Node{0, 0, std::numeric_limits<T>::max()});
+            tree[i] = parlay::sequence<Node>((length + 63) >> 6, Node{0, 0, std::numeric_limits<T>::max()});
             length = (length + 63) >> 6;
         }
     }

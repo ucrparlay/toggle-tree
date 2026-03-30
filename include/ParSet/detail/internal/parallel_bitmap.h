@@ -13,15 +13,16 @@
 namespace ParSet { namespace internal {
 
 struct ParallelBitmap {
-    std::vector<uint64_t> bitmap[6];
+    parlay::sequence<parlay::sequence<uint64_t>> bitmap;
     static constexpr uint64_t off(int32_t i) noexcept { return 6*(6-i); }
     static constexpr uint64_t idx(int32_t i, uint64_t base) noexcept { return base >> off(i); }
     static constexpr uint64_t fnd(int32_t i, uint64_t mask) noexcept { return __builtin_ctzll(__builtin_ia32_pdep_di(1ULL << i, mask)); }
 
     ParallelBitmap(size_t n, bool init_value) {
+        bitmap = parlay::sequence<parlay::sequence<uint64_t>>(6);
         uint64_t length = n;
         for (int32_t i=5; i>=0; i--) {
-            bitmap[i] = std::vector<uint64_t>((length + 63) >> 6, init_value ? UINT64_MAX : 0);
+            bitmap[i] = parlay::sequence<uint64_t>((length + 63) >> 6, init_value ? UINT64_MAX : 0);
             if (init_value && (length & 63)) bitmap[i].back() = (1ULL << (length & 63)) - 1;
             length = (length + 63) >> 6;
         }
