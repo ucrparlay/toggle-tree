@@ -8,5 +8,5 @@ make bfs
 #    numactl -i all ./bfs -i "${BIN_DIR}${g}.bin" -s -n "${NUM_ROUNDS}"
 #done
 for g in "${DIRECTEDGRAPHS[@]}"; do
-    taskset -c 0 numactl -i all ./bfs -i "${BIN_DIR}${g}.bin" -n "${NUM_ROUNDS}"
+    numactl -i all ./bfs -i "${BIN_DIR}${g}.bin" -n "${NUM_ROUNDS}"
 done
