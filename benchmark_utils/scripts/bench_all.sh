@@ -21,3 +21,7 @@ cd KCore/GBBS && bash ./bench.sh && cd ../..
 cd BellmanFord/ParSet && bash ./bench.sh && cd ../..
 cd BellmanFord/Hashbag && bash ./bench.sh && cd ../..
 cd BellmanFord/GBBS && bash ./bench.sh && cd ../..
+
+cd WeightedBFS/ParSet && bash ./bench.sh && cd ../..
+cd WeightedBFS/Tournament && bash ./bench.sh && cd ../..
+cd WeightedBFS/GBBS && bash ./bench.sh && cd ../..

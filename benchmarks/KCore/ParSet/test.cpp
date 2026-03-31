@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
         t.start();
         result = Algorithm(G);
         double tt = t.stop();
-        std::cout << "    round " << round + 1 << " time = " << tt << " sec\n";
+        std::cout << "    Round " << round + 1 << " time = " << tt << " sec\n";
         ttt += tt;
     }
     ttt /= num_rounds;

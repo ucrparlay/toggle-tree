@@ -11,11 +11,12 @@ parlay::sequence<uint32_t> Coloring(Graph& G) {
     auto priorities = parlay::tabulate<uint32_t>(n, [&](size_t s){
         uint32_t deg_s = G.offsets[s+1] - G.offsets[s];
         uint32_t perm_s = perm[s];
-        uint32_t cnt = ParSet::adaptive_sum(G, s, G.offsets[s], G.offsets[s+1],
-            [&](uint32_t d) { 
-                uint32_t deg_d = G.offsets[d+1] - G.offsets[d]; 
-                return (deg_d > deg_s) || (deg_d == deg_s && perm[d] < perm_s); 
-            }
+        uint32_t cnt = parlay::reduce(
+            parlay::delayed_tabulate(G.offsets[s + 1] - G.offsets[s], [&](size_t i) -> uint32_t {
+                uint32_t d = G.edges[G.offsets[s] + i].v;
+                uint32_t deg_d = G.offsets[d + 1] - G.offsets[d];
+                return (deg_d > deg_s) || (deg_d == deg_s && perm[d] < perm_s);
+            })
         );
         if (cnt == 0) { frontier.insert_next(s); }
         return cnt;
