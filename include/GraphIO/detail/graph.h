@@ -104,7 +104,6 @@ struct Graph {
         offsets=parlay::sequence<uint64_t>::uninitialized(n+1);
         edges=parlay::sequence<Edge<Wgh>>::uninitialized(m);
         parlay::parallel_for(0,n+1,[&](size_t i){ offsets[i]=((uint64_t*)(data+24))[i]; });
-        char *ep=data+24+(n+1)*8;
         if (bytes==24+(n+1)*8+m*4) {
             parlay::parallel_for(0,m,[&](size_t i){ edges[i].v=((uint32_t*)(data + 3 * 8 + (n + 1) * 8))[i]; });
             weighted=false;
