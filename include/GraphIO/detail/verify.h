@@ -13,6 +13,18 @@
 
 namespace GraphIO {
 
+template<class T> bool availability(parlay::sequence<T>& result, double proportion){
+    size_t n=result.size(); if(!n)return proportion<=0;
+    size_t bs=1<<15, m=(n+bs-1)/bs;
+    auto cnt=parlay::tabulate(m,[&](size_t b){
+        size_t l=b*bs, r=std::min(n,l+bs),s=0;
+        for(size_t i=l;i<r;++i)s+=result[i]!=std::numeric_limits<T>::max();
+        return s;
+    });
+    size_t tot = parlay::reduce(cnt);
+    return (double)tot/n >= proportion;
+}
+
 static inline uint64_t mix64(uint64_t x) {
     x ^= x >> 33;
     x *= 0xff51afd7ed558ccdULL;

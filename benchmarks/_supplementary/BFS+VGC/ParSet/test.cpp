@@ -16,18 +16,18 @@ int main(int argc, char** argv) {
     
     auto perm = parlay::random_permutation<uint32_t>(G.n);
     parlay::internal::timer t; double tt = 0, ttt = 0;
-    t.start();
-    parlay::sequence<uint32_t> result;
+    parlay::sequence<uint32_t> result; uint32_t base = 0;
     for (int i = 0; i < num_rounds; i++) {
         auto s = perm[num_rounds - i - 1];
         std::cout << "    Round " << i + 1 << "  source: " << s;
         t.start();
         result = Algorithm(G, s);
-        std::cout<< "  Warmup: "  << std::setprecision(2) << t.stop() << std::setprecision(6);
+        std::cout << "  Warmup: "  << std::setprecision(2) << t.stop() << std::setprecision(6);
+        //std::cout << "  Avail: " << GraphIO::availability(result, 0.1);
         t.start();
         result = Algorithm(G, s);
         tt = t.stop();
-        std::cout << " time = " << tt << " sec\n";
+        std::cout << "  time = " << tt << " sec\n";
         ttt += tt;
     }
     ttt /= num_rounds;
