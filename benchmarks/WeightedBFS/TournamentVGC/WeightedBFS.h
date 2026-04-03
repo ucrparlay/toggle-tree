@@ -28,7 +28,7 @@ parlay::sequence<int32_t> WeightedBFS(Graph& G, size_t source=0) {
         int32_t min_value = tree.repair();
         t1+= t.stop();
         if (min_value == INT32_MAX) break;
-        int32_t threshold = min_value;
+        int32_t threshold = min_value + 80;
         t.start();
         tree.extract_min(threshold, [&] (size_t s) { 
             edgemap(G,s,dist,tree,threshold);
