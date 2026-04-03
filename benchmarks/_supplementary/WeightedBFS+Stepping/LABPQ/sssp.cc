@@ -21,18 +21,14 @@ void run(Algo &algo, const Graph &G, bool verify, const char* filepath) {
     int num_rounds = 5;
     auto perm = parlay::random_permutation<uint32_t>(G.n);
     parlay::internal::timer t; double tt = 0, ttt = 0;
-    t.start();
-    parlay::sequence<uint32_t> result;
-    for (int i = 0; i < num_rounds; i++) {
-        auto s = perm[num_rounds - i - 1];
-        std::cout << "    Round " << i + 1 << "  source: " << s;
-        t.start();
-        result = algo.sssp(s);
-        std::cout<< "  Warmup: "  << std::setprecision(2) << t.stop() << std::setprecision(6);
-        t.start();
-        result = algo.sssp(s);
-        tt = t.stop();
-        std::cout << " time = " << tt << " sec\n";
+    parlay::sequence<uint32_t> result; uint32_t base = 0;
+    for (uint32_t i = 0; i < num_rounds + base; i++) {
+        auto s = perm[i];
+        t.start(); result = algo.sssp(s); tt = t.stop();
+        if (!GraphIO::availability(result, 0.1)) { base++; continue; }
+        std::cout << "    Round " << i + 1 - base << "  source: " << s << "  Warmup: "  << std::setprecision(2) << tt << std::setprecision(6);
+        t.start(); result = algo.sssp(s); tt = t.stop();
+        std::cout << "  time = " << tt << " sec\n";
         ttt += tt;
     }
     ttt /= num_rounds;

@@ -7,7 +7,7 @@ endif
 CPPFLAGS = -std=c++20 -Wall -Wextra -Werror -Wno-unused-but-set-variable -Wno-unused-parameter
 
 ROOT := ../../../..
-INCLUDE_PATH = -I$(ROOT)/benchmark_utils/parlaylib/include
+INCLUDE_PATH = -I$(ROOT)/benchmark_utils/parlaylib/include -I$(ROOT)/include
 
 ifdef CILKPLUS
 CC = clang++

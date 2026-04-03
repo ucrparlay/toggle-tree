@@ -26,6 +26,7 @@ parlay::sequence<int32_t> WeightedBFS(Graph& G, size_t source=0) {
     uint32_t rho = 400000;
     double delta = 1;
     parlay::internal::timer t; double t1=0, t2=0;
+    bool enable = false; uint64_t lastex, thisex = 0;
     for (double round = 0; !active.empty(); ) {
         t.start();
         uint64_t extracted = 0; uint64_t cnt = 0;
@@ -33,21 +34,29 @@ parlay::sequence<int32_t> WeightedBFS(Graph& G, size_t source=0) {
             //std::cerr << "  " << extracted << "\n";
             cnt++;
             round+=delta;
-            extracted += active.reduce<uint64_t,0>(
+            thisex = active.reduce<uint64_t,0>(
                 [&](uint32_t s) { 
                     if (dist[s] <= round) { active.remove(s); frontier.insert_next(s); return G.offsets[s + 1] - G.offsets[s]; } 
                     else return uint64_t(0);
                 },
                 [&](uint64_t a, uint64_t b) { return a + b; }
             );
+            if (lastex > thisex) enable = 1;
+            lastex = thisex;
+            if (enable == false) break;
+            extracted += thisex;
         }
-        if (extracted >= rho) {
-        //    std::cerr << delta << "  " << cnt << "  " << extracted << "  " << rho << "\n";
-            delta = (delta * cnt * rho) / extracted;
+        std::cerr << "extracte = " << extracted << "\n";
+        if (enable) {
+            if (extracted >= rho) {
+            //    std::cerr << delta << "  " << cnt << "  " << extracted << "  " << rho << "\n";
+                delta = (delta * cnt * rho) / extracted;
+            }
+            else {
+                delta = delta * cnt;
+            }
         }
-        else {
-            delta = delta * cnt;
-        }
+        
         //std::cerr << cnt << "\n";
         t1 += t.stop();
         t.start();

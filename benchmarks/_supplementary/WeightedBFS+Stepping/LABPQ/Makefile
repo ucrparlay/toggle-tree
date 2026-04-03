@@ -7,7 +7,7 @@ endif
 
 CPPFLAGS = -std=c++17 -Wall -Wextra -Werror
 
-ROOT := ../../..
+ROOT := ../../../..
 INCLUDE_PATH = -I$(ROOT)/benchmark_utils/parlaylib/include/ -I$(ROOT)/include/
 
 ifdef CILKPLUS

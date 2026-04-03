@@ -1,12 +1,9 @@
 source ../../../../benchmark_utils/scripts/config.sh
 make clean
 make bfs
-#for g in "${DENSEGRAPHS[@]}"; do
-#    numactl -i all ./bfs -i "${BIN_DIR}${g}.bin" -s -n "${NUM_ROUNDS}"
-#done
-#for g in "${SPARSEGRAPHS[@]}"; do
-#    numactl -i all ./bfs -i "${BIN_DIR}${g}.bin" -s -n "${NUM_ROUNDS}"
-#done
-for g in "${DIRECTEDGRAPHS[@]}"; do
-    taskset -c 0 numactl -i all ./bfs -i "${BIN_DIR}${g}.bin" -n "${NUM_ROUNDS}"
+for type in "${TYPES[@]}"; do
+    eval "graphs=(\"\${${type}[@]}\")"
+    for g in "${graphs[@]}"; do
+        numactl -i all ./bfs -i "${BIN_DIR}${g}.bin" -n "${NUM_ROUNDS}"
+    done
 done
