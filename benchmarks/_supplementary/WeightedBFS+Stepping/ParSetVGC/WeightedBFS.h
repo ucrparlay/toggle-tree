@@ -24,16 +24,9 @@ parlay::sequence<int32_t> WeightedBFS(Graph& G, size_t source=0) {
     auto dist = parlay::sequence<int32_t>(n, INT32_MAX); dist[source] = 0;
     active.insert(source); 
     uint32_t rho = 400000;
-    double delta = 1;
-    parlay::internal::timer t; double t1=0, t2=0;
-    bool enable = false; uint64_t lastex, thisex = 0;
+    uint32_t mode = 0; double delta = 1; uint64_t lastex=0, thisex = 0;
     for (double round = 0; !active.empty(); ) {
-        t.start();
-        uint64_t extracted = 0; uint64_t cnt = 0;
-        while (!active.empty() && extracted < rho) {
-            //std::cerr << "  " << extracted << "\n";
-            cnt++;
-            round+=delta;
+        if (mode != uint32_t(std::log(n))) {
             thisex = active.reduce<uint64_t,0>(
                 [&](uint32_t s) { 
                     if (dist[s] <= round) { active.remove(s); frontier.insert_next(s); return G.offsets[s + 1] - G.offsets[s]; } 
@@ -41,32 +34,37 @@ parlay::sequence<int32_t> WeightedBFS(Graph& G, size_t source=0) {
                 },
                 [&](uint64_t a, uint64_t b) { return a + b; }
             );
-            if (lastex > thisex) enable = 1;
+            round++;
+            if (lastex > std::log(n) && thisex > std::log(n)) {
+                if (mode % 2 == 0 && lastex > thisex) { mode++; thisex = 0; }
+                else if (mode % 2 == 1 && lastex < thisex) { mode++; thisex = 0; }
+            }
             lastex = thisex;
-            if (enable == false) break;
-            extracted += thisex;
+            frontier.advance_to_next();
+            frontier.for_each([&](uint32_t s) { 
+                edgemap(G, s, dist, active, round);
+            });
         }
-        std::cerr << "extracte = " << extracted << "\n";
-        if (enable) {
-            if (extracted >= rho) {
-            //    std::cerr << delta << "  " << cnt << "  " << extracted << "  " << rho << "\n";
-                delta = (delta * cnt * rho) / extracted;
+        else {
+            uint64_t extracted = 0; uint64_t cnt = 0;
+            while (!active.empty() && extracted < rho) {
+                cnt++;
+                round += delta;
+                extracted += active.reduce<uint64_t,0>(
+                    [&](uint32_t s) { 
+                        if (dist[s] <= round) { active.remove(s); frontier.insert_next(s); return G.offsets[s + 1] - G.offsets[s]; } 
+                        else return uint64_t(0);
+                    },
+                    [&](uint64_t a, uint64_t b) { return a + b; }
+                );
             }
-            else {
-                delta = delta * cnt;
-            }
+            if (extracted >= rho) delta = (delta * cnt * rho) / extracted;
+            else delta = delta * cnt;
+            frontier.advance_to_next();
+            frontier.for_each([&](uint32_t s) { 
+                edgemap(G, s, dist, active, round);
+            });
         }
-        
-        //std::cerr << cnt << "\n";
-        t1 += t.stop();
-        t.start();
-        frontier.advance_to_next();
-        frontier.for_each([&](uint32_t s) { 
-            edgemap(G, s, dist, active, round);
-        });
-        t2 += t.stop();
     }
-    //std::cerr << "\nt1=" << t1 << "  t2=" << t2 << "\n";
-    
     return dist;
 }

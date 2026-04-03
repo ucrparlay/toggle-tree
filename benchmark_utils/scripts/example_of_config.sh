@@ -9,27 +9,29 @@ BIN_DIR=/data/graphs/bin/
 ADJ_DIR=/data/graphs/pbbs/
 #TEST=../../include/GraphIO/example/FiveStarRedFlag_sym
 #TEST="${BIN_DIR}clueweb_sym"
+#TEST="${BIN_DIR}planet_sym"
+TEST="${BIN_DIR}twitter_sym"
 
 TYPES=(
     SOCIAL
     WEB
-    ROAD
-    SYNTHETIC
+    #ROAD
+    #SYNTHETIC
 )
 SOCIAL=(
-    twitter_sym
     friendster_sym
+    twitter_sym
     com-orkut_sym
-    soc-LiveJournal1_sym
     socfb-konect_sym
     socfb-uci-uni_sym
+    soc-LiveJournal1_sym
 )
 WEB=(
-    eu-2015-host_sym
     sd_arc_sym
-    enwiki-2023_sym
     arabic_sym
     uk-2002_sym
+    eu-2015-host_sym
+    enwiki-2023_sym
     indochina_sym
 )
 ROAD=(
@@ -43,9 +45,9 @@ ROAD=(
     Germany_sym
 )
 SYNTHETIC=(
-    GeoLifeNoScale_10_sym
-    CHEM_5_sym
     Cosmo50_5_sym
+    GeoLifeNoScale_10_sym
     hugebubbles-00020_sym
     hugetrace-00020_sym
+    CHEM_5_sym
 )
