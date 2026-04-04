@@ -168,6 +168,7 @@ class Graph {
     assert((void*)fptr32 == buf.data() + size);
     fclose(fp);
   }
+  /*
   void read_binary_format(char const* filename) {
     // use mmap by default
     if (weighted == true) {
@@ -204,7 +205,71 @@ class Graph {
       const void* b = data;
       munmap(const_cast<void*>(b), len);
     }
+  }*/
+  void read_binary_format(char const* filename) {
+  struct stat sb;
+  int fd = open(filename, O_RDONLY);
+  if (fd == -1) {
+    fprintf(stderr, "Error: Cannot open file %s\n", filename);
+    exit(EXIT_FAILURE);
   }
+  if (fstat(fd, &sb) == -1) {
+    fprintf(stderr, "Error: Unable to acquire file stat\n");
+    exit(EXIT_FAILURE);
+  }
+  char* data =
+      static_cast<char*>(mmap(nullptr, sb.st_size, PROT_READ, MAP_PRIVATE, fd, 0));
+  if (data == MAP_FAILED) {
+    fprintf(stderr, "Error: mmap failed\n");
+    exit(EXIT_FAILURE);
+  }
+
+  size_t len = sb.st_size;
+  n = reinterpret_cast<uint64_t*>(data)[0];
+  m = reinterpret_cast<uint64_t*>(data)[1];
+  uint64_t bytes = reinterpret_cast<uint64_t*>(data)[2];
+
+  uint64_t unweighted_bytes = 3ull * 8 + (n + 1) * 8 + m * 4;
+  uint64_t weighted_bytes   = 3ull * 8 + (n + 1) * 8 + m * 8;
+
+  offset = sequence<EdgeId>::uninitialized(n + 1);
+  edge = sequence<Edge>::uninitialized(m);
+
+  parallel_for(0, n + 1, [&](size_t i) {
+    offset[i] = reinterpret_cast<uint64_t*>(data + 3 * 8)[i];
+  });
+
+  if (bytes == unweighted_bytes) {
+    parallel_for(0, m, [&](size_t i) {
+      edge[i].v = reinterpret_cast<uint32_t*>(data + 3 * 8 + (n + 1) * 8)[i];
+      edge[i].w = 0;
+    });
+    weighted = false;
+  } else if (bytes == weighted_bytes) {
+    struct BinaryEdge {
+      EdgeTy w;
+      NodeId v;
+    };
+    static_assert(sizeof(BinaryEdge) == 8);
+
+    auto* p = reinterpret_cast<BinaryEdge*>(data + 3 * 8 + (n + 1) * 8);
+    parallel_for(0, m, [&](size_t i) {
+      edge[i].v = p[i].v;
+      edge[i].w = p[i].w;
+    });
+    weighted = true;
+  } else {
+    fprintf(stderr,
+            "Error: Incorrect binary format, file_bytes=%llu expected=%llu or %llu\n",
+            (unsigned long long)bytes,
+            (unsigned long long)unweighted_bytes,
+            (unsigned long long)weighted_bytes);
+    exit(EXIT_FAILURE);
+  }
+
+  munmap(data, len);
+  close(fd);
+}
   void read_graph(char const* filename) {
     size_t idx = string(filename).find_last_of('.');
     if (idx == string::npos) {

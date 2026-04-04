@@ -4,6 +4,6 @@ make
 for type in "${TYPES[@]}"; do
     eval "graphs=(\"\${${type}[@]}\")"
     for g in "${graphs[@]}"; do
-        numactl -i all ./sssp -i "${ADJ_DIR}${g}_wghlog.adj" -p 2000000 -w -s -v -a rho-stepping
+        numactl -i all ./sssp -i "${BIN_DIR}${g}_wghlog.bin" -p 2000000 -w -s -v -a rho-stepping
     done
 done
