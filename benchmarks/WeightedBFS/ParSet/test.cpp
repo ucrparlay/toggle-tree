@@ -13,21 +13,17 @@ int main(int argc, char** argv) {
     std::cout << std::right << std::setw(66) << ("Graph: " + G.name) << "\n";
     std::cout << "Load: " << G.load_time << "  Dump: " << dumppath << "\n";
     std::cout << "Threads: " << parlay::num_workers() << "  Rounds: " << num_rounds << "\n";
-    
+
     auto perm = parlay::random_permutation<uint32_t>(G.n);
     parlay::internal::timer t; double tt = 0, ttt = 0;
-    t.start();
-    parlay::sequence<int32_t> result;
-    for (int i = 0; i < num_rounds; i++) {
-        auto s = perm[num_rounds - i - 1];
-        std::cout << "    Round " << i + 1 << "  source: " << s;
-        t.start();
-        result = Algorithm(G, s);
-        std::cout<< "  Warmup: "  << std::setprecision(2) << t.stop() << std::setprecision(6);
-        t.start();
-        result = Algorithm(G, s);
-        tt = t.stop();
-        std::cout << " time = " << tt << " sec\n";
+    parlay::sequence<int32_t> result; uint32_t base = 0;
+    for (uint32_t i = 0; i < num_rounds + base; i++) {
+        auto s = perm[i];
+        t.start(); result = Algorithm(G, s); tt = t.stop();
+        if (!GraphIO::availability(result, 0.1)) { base++; continue; }
+        std::cout << "    Round " << i + 1 - base << "  source: " << s << "  Warmup: "  << std::setprecision(2) << tt << std::setprecision(6);
+        t.start(); result = Algorithm(G, s); tt = t.stop();
+        std::cout << "  time = " << tt << " sec\n";
         ttt += tt;
     }
     ttt /= num_rounds;

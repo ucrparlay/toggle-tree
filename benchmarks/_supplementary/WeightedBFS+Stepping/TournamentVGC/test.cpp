@@ -17,7 +17,7 @@ int main(int argc, char** argv) {
     auto perm = parlay::random_permutation<uint32_t>(G.n);
     parlay::internal::timer t; double tt = 0, ttt = 0;
     parlay::sequence<int32_t> result; uint32_t base = 0;
-    for (int i = 0; i < num_rounds + base; i++) {
+    for (uint32_t i = 0; i < num_rounds + base; i++) {
         auto s = perm[i];
         t.start(); result = Algorithm(G, s); tt = t.stop();
         if (!GraphIO::availability(result, 0.1)) { base++; continue; }

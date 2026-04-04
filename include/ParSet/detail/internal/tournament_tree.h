@@ -62,7 +62,7 @@ struct TournamentTree {
         if (!tree[0][0].dirty) return tree[0][0].augval;
         return repair(0, 0);
     }
-
+    
     template<class F>
     inline T extract_min(int32_t layer, uint64_t base, T threshold, F&& f){
         uint64_t mask = tree[layer][idx(layer, base)].bitmap;
@@ -101,7 +101,46 @@ struct TournamentTree {
     inline T extract_min(T threshold, F&& f) {
         if (!tree[0][0].bitmap) return std::numeric_limits<T>::max();
         return extract_min(0, 0, threshold, f);
+    }/*
+    template<class F>
+    inline void extract_min(int32_t layer, uint64_t base, T threshold, F&& f){
+        uint64_t mask = tree[layer][idx(layer, base)].bitmap;
+        uint64_t newmask = 0;
+        T best = std::numeric_limits<T>::max();
+        if (layer == 5) {
+            for (int32_t i = 0, e = __builtin_popcountll(mask); i < e; i++) {
+                uint64_t v = base + fnd(i, mask);
+                if (sequence[v] <= threshold) f(v);
+                else best = std::min(best, sequence[v]), newmask |= 1ULL << (v & 63);
+            }
+        } else {
+            int32_t m = __builtin_popcountll(mask), sz = 0;
+            uint64_t bases[m];
+            for (int32_t i = 0; i < m; i++) {
+                uint64_t child = base + (fnd(i, mask) << off(layer + 1));
+                T aug = tree[layer + 1][idx(layer + 1, child)].augval;
+                if (aug <= threshold) bases[sz++] = child;
+                else best = std::min(best, aug), newmask |= 1ULL << fnd(i, mask);
+            }
+            parlay::parallel_for(0, sz, [&](int32_t i) {
+                extract_min(layer + 1, bases[i], threshold, f);
+            }, 1);
+            for (int32_t i = 0; i < sz; i++) {
+                uint64_t child = bases[i];
+                auto &node = tree[layer + 1][idx(layer + 1, child)];
+                best = std::min(best, node.augval);
+                if (node.bitmap) newmask |= 1ULL << ((child >> off(layer + 1)) & 63);
+            }
+        }
+        tree[layer][idx(layer, base)].bitmap = newmask;
+        tree[layer][idx(layer, base)].augval = best;
     }
+    template<class F>
+    inline T extract_min(T threshold, F&& f) {
+        if (!tree[0][0].bitmap) return std::numeric_limits<T>::max();
+        extract_min(0, 0, threshold, f);
+        return tree[0][0].augval;
+    }*/
 };
 
 }} // namespace internal & ParSet

@@ -18,7 +18,7 @@ template<class T> bool availability(parlay::sequence<T>& result, double proporti
     size_t bs=1<<15, m=(n+bs-1)/bs;
     auto cnt=parlay::tabulate(m,[&](size_t b){
         size_t l=b*bs, r=std::min(n,l+bs),s=0;
-        for(size_t i=l;i<r;++i)s+=result[i]!=std::numeric_limits<T>::max();
+        for(size_t i=l;i<r;++i)s += (result[i]!=std::numeric_limits<T>::max() && result[i]!=UINT32_MAX && result[i]!=INT32_MAX);
         return s;
     });
     size_t tot = parlay::reduce(cnt);

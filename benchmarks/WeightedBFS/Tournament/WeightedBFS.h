@@ -22,19 +22,20 @@ parlay::sequence<int32_t> WeightedBFS(Graph& G, size_t source=0) {
     auto frontier = ParSet::Frontier(n);
     auto tree = ParSet::internal::TournamentTree(dist); 
     tree.update(source, 0); 
-    parlay::internal::timer t; double t1=0,t2=0;
     for (uint32_t round = 0; ;round++) {
-        t.start();
         int32_t min_value = tree.repair();
-        t1+= t.stop();
         if (min_value == INT32_MAX) break;
         int32_t threshold = min_value;
-        t.start();
         tree.extract_min(threshold, [&] (size_t s) { 
-            edgemap(G,s,dist,tree,threshold);
+            int32_t dist_s = dist[s];
+            parlay::parallel_for(G.offsets[s], G.offsets[s + 1], [&](size_t i) {
+                uint32_t d = G.edges[i].v;
+                int32_t w = G.edges[i].w;
+                if (dist[d] > dist_s + w) {
+                    tree.update(d, dist_s + w);
+                }
+            }, 256);
         });
-        t2+= t.stop();
     }
-    std::cerr << "\nt1=" << t1 << "  t2=" << t2 << "\n";
     return dist;
 }

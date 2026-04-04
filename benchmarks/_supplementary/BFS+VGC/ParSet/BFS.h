@@ -1,13 +1,6 @@
 #pragma once
 #include <ParSet/ParSet.h>
 
-static inline bool write_min(uint32_t& ref,uint32_t v){
-    uint32_t old=__atomic_load_n(&ref,__ATOMIC_RELAXED);
-    if(old==v)return false;
-    while(old>v&&!__atomic_compare_exchange_n(&ref,&old,v,1,__ATOMIC_RELAXED,__ATOMIC_RELAXED));
-    return old>v;
-}
-
 template <class Graph>
 parlay::sequence<uint32_t> BFS(Graph& G, size_t s=0) {
     const size_t n = G.n;
@@ -69,19 +62,19 @@ parlay::sequence<uint32_t> BFS(Graph& G, size_t s=0) {
             frontier.for_each([&](size_t s) {
                 parlay::parallel_for(G.offsets[s], G.offsets[s+1], [&](uint32_t j) { 
                     uint32_t d = G.edges[j].v;
-                    if (write_min(result[d], round)) { 
+                    if (ParSet::write_min(result[d], round)) { 
                         parlay::parallel_for(G.offsets[d], G.offsets[d+1], [&](uint32_t k) { 
                             uint32_t u = G.edges[k].v;
-                            if (write_min(result[u], round + 1)) { 
+                            if (ParSet::write_min(result[u], round + 1)) { 
                                 parlay::parallel_for(G.offsets[u], G.offsets[u+1], [&](uint32_t l) { 
                                     uint32_t w = G.edges[l].v;
-                                    if (write_min(result[w], round + 2)) { 
+                                    if (ParSet::write_min(result[w], round + 2)) { 
                                         parlay::parallel_for(G.offsets[w], G.offsets[w+1], [&](uint32_t m) { 
                                             uint32_t x = G.edges[m].v;
-                                            if (write_min(result[x], round + 3)) { 
+                                            if (ParSet::write_min(result[x], round + 3)) { 
                                                 parlay::parallel_for(G.offsets[x], G.offsets[x+1], [&](uint32_t o) { 
                                                     uint32_t y = G.edges[o].v;
-                                                    if (write_min(result[y], round + 4)) { 
+                                                    if (ParSet::write_min(result[y], round + 4)) { 
                                                         frontier.insert_next(y); 
                                                     }
                                                 }, gra);
