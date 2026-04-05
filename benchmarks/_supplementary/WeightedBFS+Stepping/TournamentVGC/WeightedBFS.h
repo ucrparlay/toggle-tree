@@ -49,19 +49,17 @@ parlay::sequence<int32_t> WeightedBFS(Graph& G, size_t source=0) {
         else {
             int32_t min_value = tree.repair();
             if (min_value == INT32_MAX) break;
-            int32_t threshold = min_value + delta;
-            uint64_t extracted = 0; uint32_t cnt = 0, just = 0;
-            while (extracted < rho) {
-                cnt++;
-                round += delta;
-                just = tree.extract_min(threshold, [&] (size_t s) { 
-                    edgemap(G,s,dist,tree,threshold);
-                });
-                if (just == 0) break;
-                extracted += just;
-            }
-            if (just != 0) delta = (delta * cnt * rho) / extracted;
-            else delta = delta * cnt;
+            uint64_t extracted = tree.extract_min(min_value+delta-1, [&] (size_t s) { 
+                edgemap(G,s,dist,tree,min_value+0.2*delta);
+            });
+            
+
+            if (extracted > 4ull * rho) delta = std::max(1.0, delta * 0.5);
+            else if (extracted > 2ull * rho) delta = std::max(1.0, delta * 0.7);
+            else if (extracted < rho / 8) delta += 4;
+            else if (extracted < rho / 4) delta += 2;
+            else if (extracted < rho / 2) delta += 1;
+            else if (extracted > rho) delta = std::max(1.0, delta - 1);
         }
     }
     return dist;
