@@ -22,7 +22,7 @@ parlay::sequence<int32_t> WeightedBFS(Graph& G, size_t source=0) {
     auto frontier = ParSet::Frontier(n);
     auto tree = ParSet::internal::TournamentTree(dist); 
     tree.update(source, 0); 
-    uint32_t rho = 200000;
+    uint32_t rho = 2000000;
     uint32_t mode = 0; double delta = 1; uint32_t lastex=0, thisex = 0;
     for (double round = 0; true; ) {
         if (mode != uint32_t(std::log(n))) {
