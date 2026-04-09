@@ -83,7 +83,7 @@ parlay::sequence<uint32_t> BFS(Graph& G, size_t s=0) {
                         uint32_t cur_dist = result[cur_index];
                         if (G.offsets[cur_index+1]-G.offsets[cur_index]+rpos>LOCAL_QUEUE) { break; }
                         lpos++;
-                        for (uint32_t i=G.offsets[cur_index]; i<G.offsets[cur_index+1]; i++) {
+                        for (size_t i=G.offsets[cur_index]; i<G.offsets[cur_index+1]; i++) {
                             cnt++; uint32_t d = G.edges[i].v;
                             if (ParSet::write_min(result[d], cur_dist+1)) {
                                 if (cur_dist+1==round+STRIDE) { frontier.insert_next(d); }
