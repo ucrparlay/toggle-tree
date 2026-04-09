@@ -1,0 +1,54 @@
+#include "GraphColoring.h"
+#include "verify.h"
+
+#include <filesystem>
+#include <fstream>
+#include <iomanip>
+
+namespace gbbs {
+
+static void append_result(const std::string& path, const std::string& graph_name,
+                          const std::string& algorithm, size_t threads,
+                          double avg_sec, int num_rounds) {
+    bool need_header = !std::filesystem::exists(path);
+    std::ofstream out(path, std::ios::app);
+    if (need_header) {
+        out << "graph\talgorithm\tthreads\tavg_sec\trounds\tload_sec\n";
+    }
+    out << graph_name << '\t' << algorithm << '\t' << threads << '\t'
+        << avg_sec << '\t' << num_rounds << '\t' << 0.0 << '\n';
+}
+
+template <class Graph>
+double Coloring_runner(Graph& G, commandLine P) {
+    std::cout << "==================================================================" << std::endl;
+    int num_rounds = std::atoi(P.getOptionValue("-num_rounds"));
+    const char* outpath = P.getOptionValue("-out");
+    std::string graph_name = GraphIO::extract_graph_name(P.getArgument(0));
+    std::cout << std::right << std::setw(66) << ("Graph: " + graph_name) << "\n";
+    std::cout << "Threads: " << num_workers() << "  Rounds: " << num_rounds << "\n";
+
+    parlay::internal::timer t;
+    t.start();
+    auto result = Coloring(G, true);
+    t.stop();
+
+    double total = 0.0;
+    for (int round = 0; round < num_rounds; round++) {
+        t.start();
+        result = Coloring(G, true);
+        double tt = t.stop();
+        total += tt;
+    }
+    double avg = total / num_rounds;
+    std::cout << "algorithm=Coloring threads=" << num_workers() << " avg=" << avg << " sec\n";
+    if (outpath != nullptr) {
+        append_result(outpath, graph_name, "Coloring", num_workers(), avg, num_rounds);
+    }
+    std::exit(0);
+    return avg;
+}
+
+}  // namespace gbbs
+
+generate_main(gbbs::Coloring_runner, false);
