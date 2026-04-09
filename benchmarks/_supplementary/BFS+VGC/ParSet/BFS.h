@@ -1,6 +1,8 @@
 #pragma once
 #include <ParSet/ParSet.h>
 
+
+
 template <class Graph>
 parlay::sequence<uint32_t> BFS(Graph& G, size_t s=0) {
     const size_t n = G.n;
@@ -58,36 +60,44 @@ parlay::sequence<uint32_t> BFS(Graph& G, size_t s=0) {
         }
         else {  // Local Search
             if (!frontier.advance_to_next()) break;
-            static const size_t gra = 4;
-            frontier.for_each([&](size_t s) {
-                parlay::parallel_for(G.offsets[s], G.offsets[s+1], [&](uint32_t j) { 
-                    uint32_t d = G.edges[j].v;
-                    if (ParSet::write_min(result[d], round)) { 
-                        parlay::parallel_for(G.offsets[d], G.offsets[d+1], [&](uint32_t k) { 
-                            uint32_t u = G.edges[k].v;
-                            if (ParSet::write_min(result[u], round + 1)) { 
-                                parlay::parallel_for(G.offsets[u], G.offsets[u+1], [&](uint32_t l) { 
-                                    uint32_t w = G.edges[l].v;
-                                    if (ParSet::write_min(result[w], round + 2)) { 
-                                        parlay::parallel_for(G.offsets[w], G.offsets[w+1], [&](uint32_t m) { 
-                                            uint32_t x = G.edges[m].v;
-                                            if (ParSet::write_min(result[x], round + 3)) { 
-                                                parlay::parallel_for(G.offsets[x], G.offsets[x+1], [&](uint32_t o) { 
-                                                    uint32_t y = G.edges[o].v;
-                                                    if (ParSet::write_min(result[y], round + 4)) { 
-                                                        frontier.insert_next(y); 
-                                                    }
-                                                }, gra);
-                                            }
-                                        }, gra);
-                                    }
-                                }, gra);
+            const size_t LOCAL_QUEUE = 128;
+            const size_t STRIDE = 8;
+            
+            auto local_search = [&](auto&& self, uint32_t s) -> void {
+                if (G.offsets[s+1]-G.offsets[s] >= LOCAL_QUEUE) {
+                    uint32_t dist = result[s];
+                    parlay::parallel_for(G.offsets[s], G.offsets[s+1], [&](size_t i) { 
+                        uint32_t d = G.edges[i].v;
+                        if (ParSet::write_min(result[d], dist+1)) {
+                            if (dist+1==round+STRIDE) { frontier.insert_next(d); }
+                            else { self(self, d); }
+                        }
+                    });
+                }
+                else {
+                    uint32_t local_queue[LOCAL_QUEUE];
+                    local_queue[0] = s;
+                    size_t lpos = 0, rpos = 1, cnt = 1;
+                    while (lpos < rpos && cnt < LOCAL_QUEUE) {
+                        uint32_t cur_index = local_queue[lpos];
+                        uint32_t cur_dist = result[cur_index];
+                        if (G.offsets[cur_index+1]-G.offsets[cur_index]+rpos>LOCAL_QUEUE) { break; }
+                        lpos++;
+                        for (uint32_t i=G.offsets[cur_index]; i<G.offsets[cur_index+1]; i++) {
+                            cnt++; uint32_t d = G.edges[i].v;
+                            if (ParSet::write_min(result[d], cur_dist+1)) {
+                                if (cur_dist+1==round+STRIDE) { frontier.insert_next(d); }
+                                else { local_queue[rpos] = d; rpos++; }
                             }
-                        }, gra);
+                        }
                     }
-                }, gra);
+                    parlay::parallel_for(lpos,rpos,[&](uint32_t i){ self(self, local_queue[i]); });
+                }
+            };
+            frontier.for_each([&](uint32_t s) {
+                local_search(local_search, s);
             });
-            round+=4;
+            round=round+STRIDE-1;
         }
     }
     return result;
