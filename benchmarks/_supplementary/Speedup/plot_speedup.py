@@ -11,9 +11,9 @@ import cairo
 
 ROOT = Path(__file__).resolve().parent
 INPUTS = {
-    "ParSet": ROOT / "ParSet" / "speedup.tsv",
-    "Hashbag": ROOT / "Hashbag" / "speedup.tsv",
-    "GBBS": ROOT / "GBBS" / "speedup.tsv",
+    "ParSet": ROOT / "ParSet" / "RoadUSA_sym.tsv",
+    "Hashbag": ROOT / "Hashbag" / "RoadUSA_sym.tsv",
+    "GBBS": ROOT / "GBBS" / "RoadUSA_sym.tsv",
 }
 RUN_DIRS = {
     "ParSet": ROOT / "ParSet",

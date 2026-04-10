@@ -17,14 +17,11 @@ namespace {
 
 std::vector<size_t> worker_counts(size_t max_workers) {
     std::vector<size_t> counts;
-    for (size_t p = 1; p <= max_workers; p <<= 1) {
+    for (size_t p = 1; p < max_workers/2; p *= 2) {
         counts.push_back(p);
-        if (p == max_workers) break;
-        if (p > max_workers / 2) {
-            counts.push_back(max_workers);
-            break;
-        }
     }
+    counts.push_back(max_workers/2);
+    counts.push_back(max_workers);
     return counts;
 }
 
