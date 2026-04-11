@@ -12,7 +12,6 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
         return G.offsets[s+1] - G.offsets[s]; 
     });
 
-    parlay::internal::timer t; double t0 = 0;
     while (!active.empty()) {
         uint32_t k = active.reduce_min(D);
         active.for_each([&](uint32_t s) { 
@@ -32,6 +31,5 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
             });
         }
     }
-    
     return result;
 }
