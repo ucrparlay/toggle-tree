@@ -1,4 +1,5 @@
 #pragma once
+#include <cmath>
 #include <toggle/toggle.h>
 
 template <class Graph>
@@ -11,12 +12,16 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
         if (G.offsets[s+1] - G.offsets[s] == 0) { active.remove(s); }
         return G.offsets[s+1] - G.offsets[s]; 
     });
-
+    uint32_t k = 0; int32_t use_reduce = -2*std::log2(n);
     while (!active.empty()) {
-        uint32_t k = active.reduce_min(D);
+        k = use_reduce>=0 ? active.reduce_min(D) : k+1;
         active.for_each([&](uint32_t s) { 
-            if (D[s] == k) { active.remove(s); frontier.insert_next(s);}
+            if (D[s] == k) {
+                active.remove(s);
+                frontier.insert_next(s);
+            }
         });
+        if (use_reduce<0 && frontier.empty_next()) { use_reduce++; }
         while (frontier.advance_to_next()) {
             frontier.for_each([&](uint32_t s) { 
                 result[s] = k;

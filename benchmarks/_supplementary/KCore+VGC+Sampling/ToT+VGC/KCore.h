@@ -16,17 +16,18 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
         return G.offsets[s + 1] - G.offsets[s];
     });
 
-    parlay::internal::timer t;
-    double t0 = 0;
+    parlay::internal::timer t; double t0 = 0;
+    uint32_t k = 0; int32_t use_reduce = -2*std::log2(n);
     while (!active.empty()) {
         t.start();
-        uint32_t k = active.reduce_min(D);
-        active.for_each([&](uint32_t s) {
+        k = use_reduce>=0 ? active.reduce_min(D) : k+1;
+        active.for_each([&](uint32_t s) { 
             if (D[s] == k) {
                 active.remove(s);
                 frontier.insert_next(s);
             }
         });
+        if (use_reduce<0 && frontier.empty_next()) { use_reduce++; }
         t0 += t.stop();
         while (frontier.advance_to_next()) {
             const size_t LOCAL_QUEUE = 128;

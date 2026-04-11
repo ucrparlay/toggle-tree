@@ -14,6 +14,7 @@ struct Frontier {
     inline void insert(size_t i) noexcept { frontier.insert(i); }
     inline void remove(size_t i) noexcept { frontier.remove(i); }
 
+    inline bool empty_next() const noexcept { return next.empty(); }
     inline bool contains_next(size_t i) const noexcept { return next.contains(i); }
     inline void insert_next(size_t i) noexcept { next.insert(i); }
     inline void remove_next(size_t i) noexcept { next.remove(i); }

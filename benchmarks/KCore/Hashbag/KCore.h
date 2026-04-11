@@ -15,14 +15,15 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
         return G.offsets[s+1] - G.offsets[s]; 
     });
 
+    uint32_t k = 0; int32_t use_reduce = -2*std::log2(n);
     while (!active.empty()) {
-        uint32_t k = active.reduce_min(D);
+        k = use_reduce>=0 ? active.reduce_min(D) : k+1;
         active.for_each([&](uint32_t s) { 
-            if (D[s] == k) { active.remove(s); frontier.insert(s);}
+            if (D[s] == k) { active.remove(s); frontier.insert(s); }
         });
-        while (true) {
-            auto frt_size = frontier.pack_into(frt);
-            if (frt_size == 0) break;
+        auto frt_size = frontier.pack_into(frt);
+        if (use_reduce<0 && frt_size == 0) { use_reduce++; }
+        while (frt_size != 0) {
             parlay::parallel_for(0, frt_size, [&](uint32_t i) {
                 uint32_t s = frt[i];
                 result[s] = k;
@@ -35,6 +36,7 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
                     }
                 }, 256);
             });
+            frt_size = frontier.pack_into(frt);
         }
     }
     
