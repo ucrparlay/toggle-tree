@@ -47,4 +47,4 @@ bfs_test:	bfs_test.cpp bfs.h seq-bfs.h
 	$(CC) $(CPPFLAGS) $(INCLUDE_PATH) bfs_test.cpp -o bfs_test
 
 clean:
-	rm bfs seq-bfs bfs_test
+	rm -f bfs

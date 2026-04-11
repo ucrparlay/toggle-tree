@@ -46,7 +46,7 @@ void pal_verifier(const Graph &G, const sequence<NodeId> &act_core) {
           if (exp_core[u] == k + i) {
             write_max(&max_core, k + i);
             parallel_for(G.offsets[u], G.offsets[u + 1], [&](size_t es) {
-              auto v = G.edges[es].idx;
+              auto v = G.edges[es].v;
               if (exp_core[v] > k + i) {
                 auto [id, succeed] =
                     fetch_and_add_bounded(&exp_core[v], -1, k + i);
@@ -88,7 +88,7 @@ void verifier(const Graph &G, const sequence<NodeId> &act_core) {
       if (exp_core[u] == i) {
         max_core = max(max_core, i);
         for (size_t j = G.offsets[u]; j < G.offsets[u + 1]; j++) {
-          NodeId v = G.edges[j].idx;
+          NodeId v = G.edges[j].v;
           if (exp_core[v] > i) {
             exp_core[v]--;
             buckets[exp_core[v]].push_back(v);
@@ -155,7 +155,7 @@ void run(Algo &algo, const Graph &G, bool verify, const char* input_path) {
   }
   ttt /= NUM_ROUND;
 
-  graph_io::process_result("", input_path, ttt, result, true);  
+  graph_io::process_result(ttt, result, "..", graph_io::extract_graph_name(input_path), "PASGAL");  
   // printf("Max coreness: %u\n", reduce(coreness, maxm<NodeId>()));
 
   //if (verify) {

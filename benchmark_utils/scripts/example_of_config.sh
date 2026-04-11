@@ -15,8 +15,8 @@ TEST="${BIN_DIR}twitter_sym"
 TYPES=(
     SOCIAL
     WEB
-    #ROAD
-    #SYNTHETIC
+    ROAD
+    SYNTHETIC
 )
 SOCIAL=(
     friendster_sym

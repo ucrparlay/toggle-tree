@@ -19,7 +19,7 @@ parlay::sequence<int32_t> BellmanFord(Graph& G, size_t source=0) {
             int dist_s = dist[s];
             parlay::parallel_for(G.offsets[s], G.offsets[s + 1], [&](size_t i) {
                 uint32_t d = G.edges[i].idx;
-                int w = G.edges[i].w;
+                int w = G.edges[i].wgh;
                 if (dist[d] > dist_s + w && writemin(dist[d], dist_s + w)) {
                     frontier.insert_next(d);
                 }

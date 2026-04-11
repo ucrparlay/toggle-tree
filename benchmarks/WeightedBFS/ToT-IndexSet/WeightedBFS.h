@@ -17,7 +17,7 @@ parlay::sequence<int32_t> WeightedBFS(Graph& G, size_t source=0) {
             int32_t dist_s = dist[s];
             parlay::parallel_for(G.offsets[s], G.offsets[s + 1], [&](size_t i) {
                 uint32_t d = G.edges[i].idx;
-                int32_t w = G.edges[i].w;
+                int32_t w = G.edges[i].wgh;
                 if (dist[d] > dist_s + w && toggle::write_min(dist[d], dist_s + w)) {
                     active.insert(d);
                 }

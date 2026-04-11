@@ -28,6 +28,6 @@ int main(int argc, char** argv) {
     }
     ttt /= num_rounds;
     
-    graph_io::process_result(dumppath, filepath, ttt, result, true);  
+    graph_io::process_result(ttt, result, "..", G.name, "Hashbag", dumppath); 
     return 0;
 }

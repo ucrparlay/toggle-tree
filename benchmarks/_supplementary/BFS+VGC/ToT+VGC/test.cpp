@@ -1,14 +1,14 @@
 #include <parlay/io.h>
 #include <graph_io/graph_io.h>
-#include "WeightedBFS.h"
-#define Algorithm WeightedBFS
+#include "BFS.h"
+#define Algorithm BFS
 
 int main(int argc, char** argv) {
     const char* filepath = argv[1];
-    uint32_t num_rounds = (argc <= 2) ? 3 : std::atoi(argv[2]);
-    const char* dumppath = (argc <= 3) ? "disabled" : argv[3];
+    uint32_t num_rounds = (argc == 2) ? 3 : std::atoi(argv[2]);
+    const char* dumppath = (argc == 3) ? "disabled" : argv[3];
 
-    graph_io::Graph<int32_t> G(filepath);
+    graph_io::Graph G(filepath);
     std::cout << "==================================================================\n";
     std::cout << std::right << std::setw(66) << ("Graph: " + G.name) << "\n";
     std::cout << "Load: " << G.load_time << "  Dump: " << dumppath << "\n";
@@ -16,7 +16,7 @@ int main(int argc, char** argv) {
     
     auto perm = parlay::random_permutation<uint32_t>(G.n);
     parlay::internal::timer t; double tt = 0, ttt = 0;
-    parlay::sequence<int32_t> result; uint32_t base = 0;
+    parlay::sequence<uint32_t> result; uint32_t base = 0;
     for (uint32_t i = 0; i < num_rounds + base; i++) {
         auto s = perm[i];
         t.start(); result = Algorithm(G, s); tt = t.stop();
@@ -28,6 +28,6 @@ int main(int argc, char** argv) {
     }
     ttt /= num_rounds;
     
-    graph_io::process_result(dumppath, filepath, ttt, result, true);  
+    graph_io::process_result(ttt, result, "..", G.name, "ToT+VGC", dumppath); 
     return 0;
 }

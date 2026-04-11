@@ -1,7 +1,7 @@
 #include <parlay/io.h>
 #include <graph_io/graph_io.h>
-#include "KCore.h"
-#define Algorithm KCore
+#include "Coloring.h"
+#define Algorithm Coloring
 
 int main(int argc, char** argv) {
     const char* filepath = argv[1];
@@ -27,6 +27,6 @@ int main(int argc, char** argv) {
     }
     ttt /= num_rounds;
 
-    graph_io::process_result(dumppath, filepath, ttt, result, true);  
+    graph_io::process_result(ttt, result, "..", G.name, "ToT", dumppath); 
     return 0;
 }

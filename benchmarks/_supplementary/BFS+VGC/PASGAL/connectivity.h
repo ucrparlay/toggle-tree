@@ -48,7 +48,7 @@ parlay::sequence<NodeId> get_cc(const Graph &G) {
     parlay::parallel_for(
         G.offsets[u], G.offsets[u + 1],
         [&](size_t i) {
-          NodeId v = G.edges[i].idx;
+          NodeId v = G.edges[i].v;
           unite_impl(u, v, parents);
         },
         1024);

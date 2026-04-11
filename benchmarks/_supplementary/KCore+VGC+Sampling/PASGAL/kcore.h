@@ -146,7 +146,7 @@ class KCore {
 
   void count_alive_neighbors(NodeId u) {
     coreness[u] = parlay::count_if(G.edges.cut(G.offsets[u], G.offsets[u + 1]),
-                                   [&](auto &es) { return alive[es.idx]; });
+                                   [&](auto &es) { return alive[es.v]; });
   }
 
   void count_vertex(NodeId u, NodeId k, NodeId base_k) {
@@ -155,7 +155,7 @@ class KCore {
     if (coreness[u] < k) {
       NodeId alive_last_round = parlay::count_if(
           G.edges.cut(G.offsets[u], G.offsets[u + 1]),
-          [&](auto &es) { return alive[es.idx] || coreness[es.idx] == k; });
+          [&](auto &es) { return alive[es.v] || coreness[es.v] == k; });
       if (alive_last_round >= k) {
         // deg[u] is reduced to k in this round
         coreness[u] = k;
@@ -179,7 +179,7 @@ class KCore {
     if (coreness[u] < k) {
       NodeId alive_last_round = parlay::count_if(
           G.edges.cut(G.offsets[u], G.offsets[u + 1]),
-          [&](auto &es) { return alive[es.idx] || coreness[es.idx] == k; });
+          [&](auto &es) { return alive[es.v] || coreness[es.v] == k; });
       if (alive_last_round >= k) {
         // deg[u] is reduced to k in this round
         coreness[u] = k;
@@ -198,7 +198,7 @@ class KCore {
   void map_neighbors_parallel(NodeId u, NodeId base_k, NodeId k,
                               bool &counting_flag) {
     parallel_for(G.offsets[u], G.offsets[u + 1], [&](size_t es) {
-      auto v = G.edges[es].idx;
+      auto v = G.edges[es].v;
       if (coreness[v] > k) {
         if (enable_sampling && sample_mode[v]) {
           sample_vertex(u, v, counting_flag);
@@ -213,7 +213,7 @@ class KCore {
                                 bool &counting_flag, NodeId *local_queue,
                                 size_t &rear) {
     for (EdgeId i = G.offsets[u]; i < G.offsets[u + 1]; i++) {
-      NodeId v = G.edges[i].idx;
+      NodeId v = G.edges[i].v;
       if (coreness[v] > k) {
         if (enable_sampling && sample_mode[v]) {
           sample_vertex(u, v, counting_flag);
@@ -237,7 +237,7 @@ class KCore {
                                                NodeId *local_queue,
                                                size_t &rear) {
     for (EdgeId i = G.offsets[u]; i < G.offsets[u + 1]; i++) {
-      NodeId v = G.edges[i].idx;
+      NodeId v = G.edges[i].v;
       if (coreness[v] > k) {
         if (enable_sampling && sample_mode[v]) {
           sample_vertex(u, v, counting_flag);
@@ -260,7 +260,7 @@ class KCore {
   void map_neighbors_parallel_wo_bucketing(NodeId u, NodeId k,
                                            bool &counting_flag) {
     parallel_for(G.offsets[u], G.offsets[u + 1], [&](size_t es) {
-      auto v = G.edges[es].idx;
+      auto v = G.edges[es].v;
       if (coreness[v] > k) {
         if (enable_sampling && sample_mode[v]) {
           sample_vertex(u, v, counting_flag);

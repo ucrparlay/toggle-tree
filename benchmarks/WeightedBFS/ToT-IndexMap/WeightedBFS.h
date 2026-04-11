@@ -6,7 +6,7 @@ void edgemap(Graph&G, uint32_t s, parlay::sequence<int32_t>& dist, TournamentTre
     int32_t dist_s = dist[s];
     parlay::parallel_for(G.offsets[s], G.offsets[s + 1], [&](size_t i) {
         uint32_t d = G.edges[i].idx;
-        int32_t w = G.edges[i].w;
+        int32_t w = G.edges[i].wgh;
         if (dist[d] > dist_s + w && tree.update(d, dist_s + w)) {
             if (dist_s + w <= maxiter) {
                 edgemap(G, d, dist, tree, maxiter);
@@ -20,7 +20,7 @@ parlay::sequence<int32_t> WeightedBFS(Graph& G, size_t source=0) {
     const size_t n = G.n;
     auto dist = parlay::sequence<int32_t>(n, INT32_MAX);
     auto frontier = toggle::Frontier(n);
-    auto tree = toggle::internal::TournamentTree(dist); 
+    auto tree = toggle::internal::IndexMap(dist); 
     tree.update(source, 0); 
     for (uint32_t round = 0; ;round++) {
         int32_t min_value = tree.repair();
@@ -30,7 +30,7 @@ parlay::sequence<int32_t> WeightedBFS(Graph& G, size_t source=0) {
             int32_t dist_s = dist[s];
             parlay::parallel_for(G.offsets[s], G.offsets[s + 1], [&](size_t i) {
                 uint32_t d = G.edges[i].idx;
-                int32_t w = G.edges[i].w;
+                int32_t w = G.edges[i].wgh;
                 if (dist[d] > dist_s + w) {
                     tree.update(d, dist_s + w);
                 }

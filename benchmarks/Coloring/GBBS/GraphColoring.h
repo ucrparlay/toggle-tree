@@ -144,7 +144,7 @@ inline sequence<uintE> Coloring(Graph& G, bool lf = false) {
     // color the rootset
     color_t.start();
     parallel_for(0, roots.size(), 1, [&](size_t i) {
-      uintE v = roots.idxtx(i);
+      uintE v = roots.vtx(i);
       colors[v] = coloring::color(G, v, colors);
     });
     color_t.stop();

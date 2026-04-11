@@ -25,7 +25,7 @@ double KCore_runner(Graph& G, commandLine P) {
     }
     ttt /= num_rounds;
 
-    graph_io::process_result(dumppath, P.getArgument(0), ttt, result, true, "../../benchmarks/KCore");
+    graph_io::process_result(ttt, result, "../../benchmarks/KCore", graph_io::extract_graph_name(P.getArgument(0)), "GBBS", dumppath); 
     std::exit(0);
     return ttt;
 }

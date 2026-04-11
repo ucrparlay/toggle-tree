@@ -79,7 +79,7 @@ class BFS {
     parallel_for(
         G.offsets[u], G.offsets[u + 1],
         [&](size_t i) {
-          NodeId v = G.edges[i].idx;
+          NodeId v = G.edges[i].v;
           if (write_min(&dist[v], dist[u] + 1)) {
             add_to_frontier(v);
           }
@@ -89,7 +89,7 @@ class BFS {
 
   void visit_neighbors_sequential(NodeId u, NodeId *local_queue, size_t &rear) {
     for (EdgeId i = G.offsets[u]; i < G.offsets[u + 1]; i++) {
-      NodeId v = G.edges[i].idx;
+      NodeId v = G.edges[i].v;
       if (write_min(&dist[v], dist[u] + 1)) {
         if (rear < LOCAL_QUEUE_SIZE) {
           local_queue[rear++] = v;
@@ -142,7 +142,7 @@ class BFS {
       if (dist[u] > round + 1) {
         const auto neighbors = G.in_neighors(u);
         for (size_t j = 0; j < neighbors.size(); j++) {
-          NodeId v = neighbors[j].idx;
+          NodeId v = neighbors[j].v;
           if (dist[v] != DIST_MAX && dist[u] > dist[v] + 1) {
             dist[u] = dist[v] + 1;
             in_frontier[u].store(true, std::memory_order_relaxed);

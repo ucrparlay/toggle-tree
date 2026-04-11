@@ -24,7 +24,7 @@ void run(Algo &algo, const Graph &G, bool verify, NodeId num_rounds, const char*
         ttt += tt;
     }
     ttt /= num_rounds;
-    graph_io::process_result(nullptr, input_path, ttt, result, true);  
+    graph_io::process_result(ttt, result, "..", graph_io::extract_graph_name(input_path), "PASGAL"); 
     printf("\n");
 }
 
