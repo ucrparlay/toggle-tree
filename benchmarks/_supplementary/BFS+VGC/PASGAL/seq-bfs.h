@@ -30,7 +30,7 @@ class Seq_BFS {
       NodeId u = q.front();
       q.pop();
       for (size_t i = G.offsets[u]; i < G.offsets[u + 1]; i++) {
-        NodeId v = G.edges[i].v;
+        NodeId v = G.edges[i].idx;
         if (dist[v] == DIST_MAX) {
           dist[v] = dist[u] + 1;
           q.push(v);

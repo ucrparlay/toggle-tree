@@ -1,7 +1,7 @@
 #pragma once
 #include <queue>
 
-#include <GraphIO/GraphIO.h>
+#include <graph_io/graph_io.h>
 #include <parlay/io.h>
 
 sequence<EdgeTy> dijkstra(size_t s, const Graph &G) {
@@ -18,7 +18,7 @@ sequence<EdgeTy> dijkstra(size_t s, const Graph &G) {
     NodeId u = dist_and_node.second;
     if (dist[u] < d) continue;
     for (size_t j = G.offset[u]; j < G.offset[u + 1]; j++) {
-      NodeId v = G.edge[j].v;
+      NodeId v = G.edge[j].idx;
       EdgeTy w = G.edge[j].w;
       if (dist[v] > dist[u] + w) {
         dist[v] = dist[u] + w;

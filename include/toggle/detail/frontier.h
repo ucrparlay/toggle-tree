@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 #pragma once
-#include "internal/parallel_bitmap.h"
+#include "internal/index_set.h"
 
-namespace ParSet {
+namespace toggle {
 
 struct Frontier {
-    internal::ParallelBitmap frontier;
-    internal::ParallelBitmap next;
+    internal::IndexSet frontier;
+    internal::IndexSet next;
     Frontier(size_t n): frontier(n, false), next(n, false) {}
 
     inline bool empty() const noexcept { return frontier.empty(); }
@@ -48,4 +48,4 @@ struct Frontier {
     }
 };
 
-} // namespace ParSet
+} // namespace toggle

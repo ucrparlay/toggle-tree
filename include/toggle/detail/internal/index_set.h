@@ -10,15 +10,15 @@
 #include <algorithm>
 #include <parlay/sequence.h>
 
-namespace ParSet { namespace internal {
+namespace toggle { namespace internal {
 
-struct ParallelBitmap {
+struct IndexSet {
     parlay::sequence<parlay::sequence<uint64_t>> bitmap;
     static constexpr uint64_t off(int32_t i) noexcept { return 6*(6-i); }
     static constexpr uint64_t idx(int32_t i, uint64_t base) noexcept { return base >> off(i); }
     static constexpr uint64_t fnd(int32_t i, uint64_t mask) noexcept { return __builtin_ctzll(__builtin_ia32_pdep_di(1ULL << i, mask)); }
 
-    ParallelBitmap(size_t n, bool init_value) {
+    IndexSet(size_t n, bool init_value) {
         bitmap = parlay::sequence<parlay::sequence<uint64_t>>(6);
         uint64_t length = n;
         for (int32_t i=5; i>=0; i--) {

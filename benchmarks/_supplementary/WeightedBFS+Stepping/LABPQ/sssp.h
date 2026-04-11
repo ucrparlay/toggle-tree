@@ -87,7 +87,7 @@ class SSSP {
             if (G.symmetrized) {
               EdgeTy temp_dis = dist[u];
               for (EdgeId es = G.offset[u]; es < G.offset[u + 1]; es++) {
-                NodeId v = G.edge[es].v;
+                NodeId v = G.edge[es].idx;
                 EdgeTy w = G.edge[es].w;
                 temp_dis = min(temp_dis, dist[v] + w);
               }
@@ -95,7 +95,7 @@ class SSSP {
                         [](EdgeTy w1, EdgeTy w2) { return w1 < w2; });
             }
             for (EdgeId es = G.offset[u]; es < G.offset[u + 1]; es++) {
-              NodeId v = G.edge[es].v;
+              NodeId v = G.edge[es].idx;
               EdgeTy w = G.edge[es].w;
               if (write_min(&dist[v], dist[u] + w,
                             [](EdgeTy w1, EdgeTy w2) { return w1 < w2; })) {
@@ -114,7 +114,7 @@ class SSSP {
           // if (G.symmetrized) {
           // size_t deg = G.offset[f + 1] - G.offset[f];
           // auto _dist = delayed_seq<EdgeTy>(deg, [&](size_t es) {
-          // NodeId v = G.edge[G.offset[f] + es].v;
+          // NodeId v = G.edge[G.offset[f] + es].idx;
           // EdgeTy w = G.edge[G.offset[f] + es].w;
           // return dist[v] + w;
           //});
@@ -128,7 +128,7 @@ class SSSP {
                 if (G.symmetrized) {
                   EdgeTy temp_dist = dist[f];
                   for (EdgeId es = _s; es < _e; es++) {
-                    NodeId v = G.edge[es].v;
+                    NodeId v = G.edge[es].idx;
                     EdgeTy w = G.edge[es].w;
                     temp_dist = min(temp_dist, dist[v] + w);
                   }
@@ -138,7 +138,7 @@ class SSSP {
                   }
                 }
                 for (EdgeId es = _s; es < _e; es++) {
-                  NodeId v = G.edge[es].v;
+                  NodeId v = G.edge[es].idx;
                   EdgeTy w = G.edge[es].w;
                   if (write_min(&dist[v], dist[f] + w,
                                 [](EdgeTy w1, EdgeTy w2) { return w1 < w2; })) {
@@ -165,7 +165,7 @@ class SSSP {
             // if (G.symmetrized) {
             // size_t deg = G.offset[u + 1] - G.offset[u];
             // auto _dist = delayed_seq<EdgeTy>(deg, [&](size_t es) {
-            // NodeId v = G.edge[G.offset[u] + es].v;
+            // NodeId v = G.edge[G.offset[u] + es].idx;
             // EdgeTy w = G.edge[G.offset[u] + es].w;
             // return dist[v] + w;
             //});
@@ -178,7 +178,7 @@ class SSSP {
                           if (G.symmetrized) {
                             EdgeTy temp_dist = dist[u];
                             for (size_t es = _s; es < _e; es++) {
-                              NodeId v = G.edge[es].v;
+                              NodeId v = G.edge[es].idx;
                               EdgeTy w = G.edge[es].w;
                               temp_dist = min(temp_dist, dist[v] + w);
                             }
@@ -190,7 +190,7 @@ class SSSP {
                             }
                           }
                           for (size_t es = _s; es < _e; es++) {
-                            NodeId v = G.edge[es].v;
+                            NodeId v = G.edge[es].idx;
                             EdgeTy w = G.edge[es].w;
                             if (write_min(&dist[v], dist[u] + w,
                                           [](EdgeTy w1, EdgeTy w2) {

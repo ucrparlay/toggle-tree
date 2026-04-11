@@ -24,7 +24,7 @@ double BFS_runner(Graph& G, commandLine P) {
     std::cout << "==================================================================" << std::endl;
     int num_rounds = std::atoi(P.getOptionValue("-num_rounds"));
     const char* outpath = P.getOptionValue("-out");
-    std::string graph_name = GraphIO::extract_graph_name(P.getArgument(0));
+    std::string graph_name = graph_io::extract_graph_name(P.getArgument(0));
     std::cout << std::right << std::setw(66) << ("Graph: " + graph_name) << "\n";
     std::cout << "Threads: " << num_workers() << "  Rounds: " << num_rounds << "\n";
 
@@ -38,7 +38,7 @@ double BFS_runner(Graph& G, commandLine P) {
         t.start();
         result = BFS(G, s);
         tt = t.stop();
-        if (!GraphIO::availability(result, 0.1)) {
+        if (!graph_io::availability(result, 0.1)) {
             base++;
             continue;
         }

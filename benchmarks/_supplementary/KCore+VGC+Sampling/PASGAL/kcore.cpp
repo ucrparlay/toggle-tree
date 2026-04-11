@@ -8,7 +8,7 @@
 #include "parlay/internal/get_time.h"
 #include "parlay/sequence.h"
 #include "utils.h"
-#include <GraphIO/GraphIO.h>
+#include <graph_io/graph_io.h>
 
 using namespace std;
 using namespace parlay;
@@ -46,7 +46,7 @@ void pal_verifier(const Graph &G, const sequence<NodeId> &act_core) {
           if (exp_core[u] == k + i) {
             write_max(&max_core, k + i);
             parallel_for(G.offsets[u], G.offsets[u + 1], [&](size_t es) {
-              auto v = G.edges[es].v;
+              auto v = G.edges[es].idx;
               if (exp_core[v] > k + i) {
                 auto [id, succeed] =
                     fetch_and_add_bounded(&exp_core[v], -1, k + i);
@@ -88,7 +88,7 @@ void verifier(const Graph &G, const sequence<NodeId> &act_core) {
       if (exp_core[u] == i) {
         max_core = max(max_core, i);
         for (size_t j = G.offsets[u]; j < G.offsets[u + 1]; j++) {
-          NodeId v = G.edges[j].v;
+          NodeId v = G.edges[j].idx;
           if (exp_core[v] > i) {
             exp_core[v]--;
             buckets[exp_core[v]].push_back(v);
@@ -136,7 +136,7 @@ void run(Algo &algo, const Graph &G, bool verify, const char* input_path) {
   //uint32_t num_rounds = (argc == 2) ? 3 : std::atoi(argv[2]);
   //const char* dumppath = (argc == 3) ? "disabled" : argv[3];
 
-  //GraphIO::Graph G(filepath);
+  //graph_io::Graph G(filepath);
   std::cout << "==================================================================\n";
   //std::cout << std::right << std::setw(66) << ("Graph: " + G.name) << "\n";
   //std::cout << "Load: " << G.load_time << "  Dump: " << dumppath << "\n";
@@ -155,7 +155,7 @@ void run(Algo &algo, const Graph &G, bool verify, const char* input_path) {
   }
   ttt /= NUM_ROUND;
 
-  GraphIO::process_result("", input_path, ttt, result, true);  
+  graph_io::process_result("", input_path, ttt, result, true);  
   // printf("Max coreness: %u\n", reduce(coreness, maxm<NodeId>()));
 
   //if (verify) {

@@ -1,5 +1,5 @@
 #include <parlay/io.h>
-#include <GraphIO/GraphIO.h>
+#include <graph_io/graph_io.h>
 #include "Coloring.h"
 #define Algorithm Coloring
 
@@ -8,7 +8,7 @@ int main(int argc, char** argv) {
     uint32_t num_rounds = (argc == 2) ? 3 : std::atoi(argv[2]);
     const char* dumppath = (argc == 3) ? "disabled" : argv[3];
 
-    GraphIO::Graph G(filepath);
+    graph_io::Graph G(filepath);
     std::cout << "==================================================================\n";
     std::cout << std::right << std::setw(66) << ("Graph: " + G.name) << "\n";
     std::cout << "Load: " << G.load_time << "  Dump: " << dumppath << "\n";
@@ -27,6 +27,6 @@ int main(int argc, char** argv) {
     }
     ttt /= num_rounds;
 
-    GraphIO::process_result(dumppath, filepath, ttt, result, true);  
+    graph_io::process_result(dumppath, filepath, ttt, result, true);  
     return 0;
 }

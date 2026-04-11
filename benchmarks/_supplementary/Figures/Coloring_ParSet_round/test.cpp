@@ -1,5 +1,5 @@
 #include <parlay/io.h>
-#include <GraphIO/GraphIO.h>
+#include <graph_io/graph_io.h>
 #include "Coloring.h"
 #include <fstream>
 #include <sys/stat.h>
@@ -12,7 +12,7 @@ int main(int argc, char** argv) {
     const char* filepath = argv[1];
     const char* csvpath  = argv[2];
 
-    GraphIO::Graph G(filepath);
+    graph_io::Graph G(filepath);
     std::cout << "==================================================================\n";
     std::cout << std::right << std::setw(66) << ("Graph: " + G.name) << "\n";
     std::cout << "Threads: " << parlay::num_workers() << "\n";

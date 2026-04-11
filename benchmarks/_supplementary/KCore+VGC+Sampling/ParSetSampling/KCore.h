@@ -1,5 +1,5 @@
 #pragma once
-#include <ParSet/ParSet.h>
+#include <toggle/toggle.h>
 
 #include <algorithm>
 #include <array>
@@ -13,8 +13,8 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
   using NodeId = uint32_t;
   const size_t n = G.n;
   auto result = parlay::sequence<uint32_t>(n, 0);
-  auto active = ParSet::Active(n);
-  auto frontier = ParSet::Frontier(n);
+  auto active = toggle::Active(n);
+  auto frontier = toggle::Frontier(n);
   auto D = parlay::tabulate<uint32_t>(n, [&](size_t s) {
     if (G.offsets[s + 1] - G.offsets[s] == 0) {
       active.remove(s);
@@ -33,7 +33,7 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
       log2_error_factor / (init_reduce_ratio * init_reduce_ratio);
 
   // Bitmap-based set for vertices whose samplers fired this peel round.
-  auto counting_bag = ParSet::Active(n, false);
+  auto counting_bag = toggle::Active(n, false);
   auto sample_mode = parlay::sequence<bool>(n, false);
   auto samplers = parlay::sequence<Sampler>::uninitialized(n);
 
@@ -66,7 +66,7 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
 
   auto count_alive_neighbors = [&](NodeId u) {
     D[u] = parlay::count_if(G.edges.cut(G.offsets[u], G.offsets[u + 1]),
-                            [&](auto& es) { return active.contains(es.v); });
+                            [&](auto& es) { return active.contains(es.idx); });
   };
 
   auto count_vertex = [&](NodeId u, NodeId k) {
@@ -122,7 +122,7 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
           parlay::parallel_for(
               G.offsets[s], G.offsets[s + 1],
               [&](size_t i) {
-                uint32_t d = G.edges[i].v;
+                uint32_t d = G.edges[i].idx;
                 if (active.contains(d)) {
                   if (enable_sampling && sample_mode[d]) {
                     uint32_t hash_v = parlay::hash32(s * G.n + d);
@@ -158,7 +158,7 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
             for (uint32_t i = G.offsets[cur_index];
                  i < G.offsets[cur_index + 1]; i++) {
               cnt++;
-              uint32_t d = G.edges[i].v;
+              uint32_t d = G.edges[i].idx;
               if (active.contains(d)) {
                 if (enable_sampling && sample_mode[d]) {
                   uint32_t hash_v = parlay::hash32(cur_index * G.n + d);

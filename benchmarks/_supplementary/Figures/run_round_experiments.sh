@@ -11,6 +11,6 @@ run_exp() {
 }
 
 run_exp Kcore_Hashbag_round
-run_exp Kcore_ParSet_round
+run_exp Kcore_toggle_round
 run_exp Coloring_Hashbag_round
-run_exp Coloring_ParSet_round
+run_exp Coloring_toggle_round

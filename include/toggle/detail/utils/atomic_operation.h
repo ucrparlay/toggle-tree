@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
-namespace ParSet { 
+namespace toggle { 
 
 template<class T> inline bool write_min(T& address, T value){
     T old_value = address;
@@ -15,4 +15,4 @@ template<class T> inline bool write_max(T& address, T value){
     return old_value < value;
 }
 
-} // namespace ParSet
+} // namespace toggle

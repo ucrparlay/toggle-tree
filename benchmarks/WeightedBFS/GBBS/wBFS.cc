@@ -9,7 +9,7 @@ double wBFS_runner(Graph& G, commandLine P) {
     std::cout << "==================================================================" << std::endl;
     const char* dumppath = P.getOptionValue("-dump") == nullptr ? "disabled" : P.getOptionValue("-dump");
     int num_rounds = std::atoi(P.getOptionValue("-num_rounds"));
-    std::cout << std::right << std::setw(66) << ("Graph: " + GraphIO::extract_graph_name(P.getArgument(0))) << "\n";
+    std::cout << std::right << std::setw(66) << ("Graph: " + graph_io::extract_graph_name(P.getArgument(0))) << "\n";
     std::cout << "Dump: " << dumppath << "\n";
     std::cout << "Threads: " << num_workers() << "  Rounds: " << num_rounds << "\n";
 
@@ -19,7 +19,7 @@ double wBFS_runner(Graph& G, commandLine P) {
     for (uint32_t i = 0; i < num_rounds + base; i++) {
         auto s = perm[i];
         t.start(); result = wBFS(G, s, 32, false, false); tt = t.stop();
-        if (!GraphIO::availability(result, 0.1)) { base++; continue; }
+        if (!graph_io::availability(result, 0.1)) { base++; continue; }
         std::cout << "    Round " << i + 1 - base << "  source: " << s << "  Warmup: "  << std::setprecision(2) << tt << std::setprecision(6);
         t.start(); result = wBFS(G, s, 32, false, false); tt = t.stop();
         std::cout << "  time = " << tt << " sec\n";
@@ -27,7 +27,7 @@ double wBFS_runner(Graph& G, commandLine P) {
     }
     ttt /= num_rounds;
 
-    GraphIO::process_result(dumppath, P.getArgument(0), ttt, result, true, "../../benchmarks/WeightedBFS");
+    graph_io::process_result(dumppath, P.getArgument(0), ttt, result, true, "../../benchmarks/WeightedBFS");
     std::exit(0);
     return ttt;
 }

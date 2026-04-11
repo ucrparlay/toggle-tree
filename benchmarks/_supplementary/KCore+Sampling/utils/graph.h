@@ -12,7 +12,7 @@
 #include <type_traits>
 #include <vector>
 
-#include <ParSet/ParSet.h>
+#include <toggle/toggle.h>
 #include "utils.h"
 
 class Empty {};
@@ -27,19 +27,19 @@ class WEdge {
   WEdge(NodeId _v, EdgeTy _w) : v(_v), w(_w) {}
   bool operator<(const WEdge &rhs) const {
     if constexpr (std::is_same_v<EdgeTy, Empty>) {
-      return v < rhs.v;
+      return v < rhs.idx;
     } else {
-      if (v != rhs.v) {
-        return v < rhs.v;
+      if (v != rhs.idx) {
+        return v < rhs.idx;
       }
       return w < rhs.w;
     }
   }
   bool operator==(const WEdge &rhs) const {
     if constexpr (std::is_same_v<EdgeTy, Empty>) {
-      return v == rhs.v;
+      return v == rhs.idx;
     } else {
-      return (v == rhs.v && w == rhs.w);
+      return (v == rhs.idx && w == rhs.w);
     }
   }
 };
@@ -73,12 +73,12 @@ class Graph {
     parlay::sequence<std::pair<NodeId, Edge>> edgelist(m);
     parlay::parallel_for(0, n, [&](NodeId u) {
       parlay::parallel_for(offsets[u], offsets[u + 1], [&](EdgeId i) {
-        edgelist[i] = std::make_pair(edges[i].v, Edge(u, edges[i].w));
+        edgelist[i] = std::make_pair(edges[i].idx, Edge(u, edges[i].w));
       });
     });
     parlay::sort_inplace(parlay::make_slice(edgelist), [](auto &a, auto &b) {
       if (a.first != b.first) return a.first < b.first;
-      return a.second.v < b.second.v;
+      return a.second.idx < b.second.idx;
     });
     in_offsets = parlay::sequence<EdgeId>(n + 1, m);
     in_edges = parlay::sequence<Edge>(m);
@@ -118,7 +118,7 @@ class Graph {
     });
     offsets[n] = m;
     parlay::parallel_for(0, m, [&](size_t i) {
-      edges[i].v = parlay::internal::chars_to_int_t<NodeId>(
+      edges[i].idx = parlay::internal::chars_to_int_t<NodeId>(
           make_slice(tokens_seq[i + n + 3]));
     });
     if (weighted_input) {
@@ -248,7 +248,7 @@ file >> edges[i].w;
       offsets[i] = reinterpret_cast<uint64_t *>(data + 3 * 8)[i];
     });
     parlay::parallel_for(0, m, [&](size_t i) {
-      edges[i].v = reinterpret_cast<uint32_t *>(data + 3 * 8 + (n + 1) * 8)[i];
+      edges[i].idx = reinterpret_cast<uint32_t *>(data + 3 * 8 + (n + 1) * 8)[i];
     });
     if (data) {
       munmap(data, len);
@@ -294,13 +294,13 @@ file >> edges[i].w;
         reinterpret_cast<uint32_t *>(data + 3 * 8 + (n + 1) * 8);
     edges = parlay::sequence<Edge>(m);
     for (size_t i = 0; i < m; i++) {
-      edges[i].v = out_edges_ptr[i];
+      edges[i].idx = out_edges_ptr[i];
     }
     // Build in-edges by inverting out-edges
     parlay::sequence<size_t> in_degree(n, 0);
     for (size_t src = 0; src < n; src++) {
       for (size_t j = offsets[src]; j < offsets[src + 1]; j++) {
-        NodeId dest = edges[j].v;
+        NodeId dest = edges[j].idx;
         in_degree[dest]++;
       }
     }
@@ -313,9 +313,9 @@ file >> edges[i].w;
     parlay::sequence<size_t> in_pos(n, 0);
     for (size_t src = 0; src < n; src++) {
       for (size_t j = offsets[src]; j < offsets[src + 1]; j++) {
-        NodeId dest = edges[j].v;
+        NodeId dest = edges[j].idx;
         size_t pos = in_offsets[dest] + in_pos[dest]++;
-        in_edges[pos].v = src;
+        in_edges[pos].idx = src;
       }
     }
     munmap(data, len);
@@ -401,7 +401,7 @@ file >> edges[i].w;
 
     for (size_t u = 0; u < n; u++) {
       for (size_t es = offsets[u]; es < offsets[u + 1]; es++) {
-        NodeId v = edges[es].v;
+        NodeId v = edges[es].idx;
         if (u < left_partition_size && v < left_partition_size) {
           left_edges++;
         } else if (u >= left_partition_size && v >= left_partition_size) {
@@ -553,7 +553,7 @@ file >> edges[i].w;
     chars.insert(chars.end(),
                  parlay::flatten(parlay::tabulate(m * 2, [&](size_t i) {
                    if (i % 2 == 0) {
-                     return parlay::to_chars(edges[i / 2].v);
+                     return parlay::to_chars(edges[i / 2].idx);
                    } else {
                      return parlay::to_chars('\n');
                    }
@@ -576,7 +576,7 @@ file >> edges[i].w;
     static_assert(sizeof(NodeId) == sizeof(uint32_t));
     size_t sizes = (n + 1) * 8 + m * 4 + 3 * 8;
     auto tmp_edges =
-        parlay::tabulate<NodeId>(m, [&](size_t i) { return edges[i].v; });
+        parlay::tabulate<NodeId>(m, [&](size_t i) { return edges[i].idx; });
     std::ofstream ofs(filename, std::ios::binary);
     if (!ofs.is_open()) {
       std::cerr << "Error: Cannot open file " << filename << std::endl;
@@ -603,7 +603,7 @@ file >> edges[i].w;
     uint32_t range = r - l + 1;
     parlay::parallel_for(0, n, [&](NodeId u) {
       parlay::parallel_for(offsets[u], offsets[u + 1], [&](EdgeId i) {
-        NodeId v = edges[i].v;
+        NodeId v = edges[i].idx;
         edges[i].w = ((parlay::hash32(u) ^ parlay::hash32(v)) % range) + l;
       });
     });
@@ -615,7 +615,7 @@ file >> edges[i].w;
     parlay::parallel_for(0, n, [&](size_t i) {
       size_t prev = n + 1;
       for (size_t j = offsets[i]; j < offsets[i + 1]; j++) {
-        NodeId v = edges[j].v;
+        NodeId v = edges[j].idx;
         if (i == v) {
           write_add(&self_loops, 1);
         }
@@ -640,14 +640,14 @@ file >> edges[i].w;
       }
     });
     parlay::parallel_for(0, m, [&](size_t i) {
-      NodeId u = edges[i].v;
+      NodeId u = edges[i].idx;
       assert(u < n);
     });
     bool sorted = true;
     parlay::parallel_for(0, n, [&](NodeId u) {
       for (size_t i = offsets[u] + 1; i < offsets[u + 1]; i++) {
-        NodeId curr_v = edges[i].v;
-        NodeId prev_v = edges[i - 1].v;
+        NodeId curr_v = edges[i].idx;
+        NodeId prev_v = edges[i - 1].idx;
         if (curr_v < prev_v && sorted == true) {
           sorted = false;
         }
@@ -660,7 +660,7 @@ file >> edges[i].w;
     if (symmetrized) {
       parlay::parallel_for(0, n, [&](NodeId u) {
         for (size_t i = offsets[u]; i < offsets[u + 1]; i++) {
-          NodeId v = edges[i].v;
+          NodeId v = edges[i].idx;
           WEdge<NodeId, EdgeTy> e(u, edges[i].w);
           auto low_bound = std::lower_bound(edges.begin() + offsets[v],
                                             edges.begin() + offsets[v + 1], e);
@@ -703,7 +703,7 @@ file >> edges[i].w;
     offsets = parlay::sequence<EdgeId>(n + 1, m);
     edges = parlay::sequence<Edge>(m);
     parlay::parallel_for(0, m, [&](size_t i) {
-      edges[i].v = edgelist[i].second;
+      edges[i].idx = edgelist[i].second;
       if (i == 0 || edgelist[i].first != edgelist[i - 1].first) {
         offsets[edgelist[i].first] = i;
       }
@@ -733,7 +733,7 @@ Graph<NodeId, EdgeId, EdgeTy> edgelist2graph(
   G.m = m;
   parlay::sort_inplace(parlay::make_slice(edgelist), [](auto &a, auto &b) {
     if (a.first != b.first) return a.first < b.first;
-    return a.second.v < b.second.v;
+    return a.second.idx < b.second.idx;
   });
   G.offsets = parlay::sequence<EdgeId>(n + 1, m);
   G.edges = parlay::sequence<Edge>(m);
@@ -760,7 +760,7 @@ Graph make_symmetrized(const Graph &G) {
   parlay::sequence<std::pair<NodeId, Edge>> edgelist(m * 2);
   parlay::parallel_for(0, n, [&](NodeId u) {
     parlay::parallel_for(G.offsets[u], G.offsets[u + 1], [&](EdgeId i) {
-      NodeId v = G.edges[i].v;
+      NodeId v = G.edges[i].idx;
       EdgeTy w = G.edges[i].w;
       edgelist[i * 2 + 0] = std::make_pair(u, Edge(v, w));
       edgelist[i * 2 + 1] = std::make_pair(v, Edge(u, w));
@@ -769,10 +769,10 @@ Graph make_symmetrized(const Graph &G) {
   sort_inplace(make_slice(edgelist));
   auto pred = parlay::delayed_seq<bool>(m * 2, [&](size_t i) {
     if (i > 0 && edgelist[i].first == edgelist[i - 1].first &&
-        edgelist[i].second.v == edgelist[i - 1].second.v) {
+        edgelist[i].second.idx == edgelist[i - 1].second.idx) {
       return false;
     }
-    if (edgelist[i].first == edgelist[i].second.v) {
+    if (edgelist[i].first == edgelist[i].second.idx) {
       return false;
     }
     return true;
@@ -792,7 +792,7 @@ Graph Transpose(const Graph &G) {
   parlay::sequence<std::pair<NodeId, Edge>> edgelist(m);
   parlay::parallel_for(0, n, [&](NodeId u) {
     parlay::parallel_for(G.offsets[u], G.offsets[u + 1], [&](EdgeId i) {
-      edgelist[i] = std::make_pair(G.edges[i].v, Edge(u, G.edges[i].w));
+      edgelist[i] = std::make_pair(G.edges[i].idx, Edge(u, G.edges[i].w));
     });
   });
   return edgelist2graph<NodeId, EdgeId, EdgeTy>(edgelist, n, m);

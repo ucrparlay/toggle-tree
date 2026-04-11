@@ -9,22 +9,21 @@
 #include <iostream>
 #include <parlay/sequence.h>
 
-namespace GraphIO {
+namespace graph_io {
 
 struct Empty {};
 
-template <class Wgh>
+template <class T>
 struct Edge {
-    uint32_t v;
-    [[no_unique_address]] Wgh w;
+    uint32_t idx;
+    [[no_unique_address]] T wgh;
     Edge() {}
-    Edge(uint32_t _v) : v(_v) {}
-    Edge(uint32_t _v, Wgh _w) : v(_v), w(_w) {}
+    Edge(uint32_t _idx, T _wgh) : idx(_idx), wgh(_wgh) {}
 };
 
-template <class Wgh = Empty>
+template <class T = Empty>
 struct Graph {
-    static_assert(std::is_same_v<Wgh, Empty> || std::is_same_v<Wgh, int32_t> || std::is_same_v<Wgh, float>, "Wgh must be Empty or int32_t or float");
+    static_assert(std::is_same_v<T, Empty> || std::is_same_v<T, int32_t> || std::is_same_v<T, float>, "T must be Empty or int32_t or float");
 
     size_t n;
     size_t m;
@@ -33,11 +32,11 @@ struct Graph {
     double load_time;
     std::string name;
     parlay::sequence<uint64_t> offsets;
-    parlay::sequence<Edge<Wgh>> edges;
+    parlay::sequence<Edge<T>> edges;
     parlay::sequence<uint64_t>& in_offsets;
-    parlay::sequence<Edge<Wgh>>& in_edges;
+    parlay::sequence<Edge<T>>& in_edges;
     parlay::sequence<uint64_t> in_offsets_seq;
-    parlay::sequence<Edge<Wgh>> in_edges_seq;
+    parlay::sequence<Edge<T>> in_edges_seq;
 
     Graph(const char *filename, int32_t r=0): 
         symmetrized(std::string(filename).find("_sym") != std::string::npos),
@@ -53,25 +52,25 @@ struct Graph {
         else { std::cerr << "Error: Invalid graph extension or format: " << filename << "\n"; abort(); }
         name = str_filename.substr(0, str_filename.find_last_of('.'));
         if (name.find_last_of('/') != std::string::npos) { name = name.substr(name.find_last_of('/') + 1); }
-        if constexpr (std::is_same_v<Wgh, float>) { if (!weighted) parlay::parallel_for(0, m, [&](size_t i){ edges[i].w = 1; }); weighted = true;}
-        if constexpr (std::is_same_v<Wgh, int32_t>) { if (!weighted) make_random_weight(r); }
+        if constexpr (std::is_same_v<T, float>) { if (!weighted) parlay::parallel_for(0, m, [&](size_t i){ edges[i].wgh = 1; }); weighted = true;}
+        if constexpr (std::is_same_v<T, int32_t>) { if (!weighted) make_random_weight(r); }
         if (!symmetrized) { make_inverse(); }
         load_time = t.stop(); 
     }
 
     void make_inverse() {
-        parlay::sequence<std::pair<uint32_t, Edge<Wgh>>> edgelist(m);
+        parlay::sequence<std::pair<uint32_t, Edge<T>>> edgelist(m);
         parlay::parallel_for(0, n, [&](uint32_t u) {
             parlay::parallel_for(offsets[u], offsets[u + 1], [&](uint64_t i) {
-                edgelist[i] = std::make_pair(edges[i].v, Edge<Wgh>(u, edges[i].w));
+                edgelist[i] = std::make_pair(edges[i].idx, Edge<T>(u, edges[i].wgh));
             });
         });
         parlay::sort_inplace(parlay::make_slice(edgelist), [](auto &a, auto &b) {
             if (a.first != b.first) return a.first < b.first;
-            return a.second.v < b.second.v;
+            return a.second.idx < b.second.idx;
         });
         in_offsets_seq = parlay::sequence<uint64_t>(n + 1, m);
-        in_edges_seq = parlay::sequence<Edge<Wgh>>(m);
+        in_edges_seq = parlay::sequence<Edge<T>>(m);
         parlay::parallel_for(0, m, [&](size_t i) {
             in_edges_seq[i] = edgelist[i].second;
             if (i == 0 || edgelist[i].first != edgelist[i - 1].first) { in_offsets_seq[edgelist[i].first] = i; }
@@ -86,8 +85,8 @@ struct Graph {
         int32_t range = r;
         parlay::parallel_for(0, n, [&](uint32_t u) {
             parlay::parallel_for(offsets[u], offsets[u + 1], [&](uint64_t i) {
-                uint32_t v = edges[i].v;
-                edges[i].w = 1 + ((parlay::hash32(u) ^ parlay::hash32(v)) % range);
+                uint32_t v = edges[i].idx;
+                edges[i].wgh = 1 + ((parlay::hash32(u) ^ parlay::hash32(v)) % range);
             });
         });
     }
@@ -102,16 +101,16 @@ struct Graph {
         m=((uint64_t*)data)[1];
         uint64_t bytes=((uint64_t*)data)[2];
         offsets=parlay::sequence<uint64_t>::uninitialized(n+1);
-        edges=parlay::sequence<Edge<Wgh>>::uninitialized(m);
+        edges=parlay::sequence<Edge<T>>::uninitialized(m);
         parlay::parallel_for(0,n+1,[&](size_t i){ offsets[i]=((uint64_t*)(data+24))[i]; });
         if (bytes==24+(n+1)*8+m*4) {
-            parlay::parallel_for(0,m,[&](size_t i){ edges[i].v=((uint32_t*)(data + 3 * 8 + (n + 1) * 8))[i]; });
+            parlay::parallel_for(0,m,[&](size_t i){ edges[i].idx=((uint32_t*)(data + 3 * 8 + (n + 1) * 8))[i]; });
             weighted=false;
         }
         else if (bytes==24+(n+1)*8+m*8) {
-            struct X{ Wgh w; uint32_t v; }; static_assert(sizeof(X)==8);
+            struct X{ T wgh; uint32_t idx; }; static_assert(sizeof(X)==8);
             parlay::parallel_for(0,m,[&](size_t i){
-                auto &x=((X*)(data + 3 * 8 + (n + 1) * 8))[i]; edges[i].v=x.v; edges[i].w=x.w;
+                auto &x=((X*)(data + 3 * 8 + (n + 1) * 8))[i]; edges[i].idx=x.idx; edges[i].wgh=x.wgh;
             });
             weighted=true;
         }
@@ -126,18 +125,18 @@ struct Graph {
         uint64_t hdr[3];
         hdr[0]=n;
         hdr[1]=m;
-        if constexpr(std::is_same_v<Wgh,Empty>) hdr[2]=3*8+(n+1)*8+m*4;
+        if constexpr(std::is_same_v<T,Empty>) hdr[2]=3*8+(n+1)*8+m*4;
         else hdr[2]=3*8+(n+1)*8+m*8;
         out.write((char*)hdr,3*8);
         out.write((char*)offsets.begin(),(std::streamsize)((n+1)*8));
-        if constexpr(std::is_same_v<Wgh,Empty>){
+        if constexpr(std::is_same_v<T,Empty>){
             auto to=parlay::sequence<uint32_t>::uninitialized(m);
-            parlay::parallel_for(0,m,[&](size_t i){ to[i]=edges[i].v; });
+            parlay::parallel_for(0,m,[&](size_t i){ to[i]=edges[i].idx; });
             out.write((char*)to.begin(),(std::streamsize)(m*4));
         }else{
-            struct X{ Wgh w; uint32_t v; }; 
+            struct X{ T wgh; uint32_t idx; }; 
             auto ew=parlay::sequence<X>::uninitialized(m);
-            parlay::parallel_for(0,m,[&](size_t i){ ew[i]={edges[i].w,edges[i].v}; });
+            parlay::parallel_for(0,m,[&](size_t i){ ew[i]={edges[i].wgh,edges[i].idx}; });
             out.write((char*)ew.begin(),(std::streamsize)(m*8));
         }
         out.close();
@@ -153,45 +152,45 @@ struct Graph {
         auto next_tok = [&](char *&x, char *lim) -> std::pair<char*,char*> { while (x < lim && issp(*x)) ++x; char *l = x; while (x < lim && !issp(*x)) ++x; return {l, x}; };
         auto parse_u64 = [&](char *l, char *r) -> uint64_t { uint64_t x = 0; while (l < r) x = x * 10 + (uint64_t)(*l++ - '0'); return x; };
         auto parse_u32 = [&](char *l, char *r) -> uint32_t { uint32_t x = 0; while (l < r) x = x * 10 + (uint32_t)(*l++ - '0'); return x; };
-        auto parse_w = [&](char *l, char *r) -> Wgh {
-            if constexpr (std::is_same_v<Wgh, Empty>) return Wgh();
+        auto parse_w = [&](char *l, char *r) -> T {
+            if constexpr (std::is_same_v<T, Empty>) return T();
             else { bool neg = false; if (l < r && (*l == '-' || *l == '+')) neg = (*l == '-'), ++l; double x = 0, frac = 0, base = 1;
             while (l < r && *l >= '0' && *l <= '9') x = x * 10 + (*l++ - '0');
             if (l < r && *l == '.') { ++l; while (l < r && *l >= '0' && *l <= '9') frac = frac * 10 + (*l++ - '0'), base *= 10; x += frac / base; }
             if (l < r && (*l == 'e' || *l == 'E')) { ++l; bool eneg = false; if (l < r && (*l == '-' || *l == '+')) eneg = (*l == '-'), ++l; int e = 0; while (l < r && *l >= '0' && *l <= '9') e = e * 10 + (*l++ - '0'); x *= std::pow(10.0, eneg ? -e : e); }
             if (neg) x = -x;
-            return (Wgh)x; }
+            return (T)x; }
         };
         auto [h0,h1] = next_tok(p, ed); std::string_view header(h0, h1 - h0);
         auto [n0,n1] = next_tok(p, ed); n = parse_u64(n0, n1); auto [m0,m1] = next_tok(p, ed); m = parse_u64(m0, m1);
         if (!n) { std::cerr << "Error: Failed in reading graph.\n"; abort(); }
         if (header == "WeightedAdjacencyGraph") weighted = true; else if (header == "AdjacencyGraph") weighted = false; else { std::cerr << "Unrecognized PBBS format\n"; abort(); }
-        offsets = parlay::sequence<uint64_t>::uninitialized(n + 1); edges = parlay::sequence<Edge<Wgh>>::uninitialized(m); skip(p); char *body = p;
-        uint64_t need = n + m + (weighted ? m : 0); int T = std::max(1, 4 * (int)parlay::num_workers()); if ((uint64_t)T > need) T = (int)need; if (T <= 0) T = 1;
-        parlay::sequence<char*> L(T + 1); L[0] = body; L[T] = ed; size_t body_len = ed - body;
-        for (int t = 1; t < T; ++t) { char *x = body + ((__uint128_t)body_len * t / T); while (x < ed && !issp(*x)) ++x; while (x < ed && issp(*x)) ++x; L[t] = x; }
-        parlay::sequence<uint64_t> cnt(T), pref(T + 1); pref[0] = 0;
-        for (int t = 0; t < T; ++t) { char *x = L[t], *r = L[t + 1]; uint64_t c = 0; while (1) { while (x < r && issp(*x)) ++x; if (x >= r) break; while (x < r && !issp(*x)) ++x; ++c; } cnt[t] = c; pref[t + 1] = pref[t] + c; }
-        if (pref[T] != need) { std::cerr << "Error: token count mismatch, got " << pref[T] << " expected " << need << "\n"; abort(); }
-        parlay::parallel_for(0, T, [&](int t) { char *x = L[t], *r = L[t + 1]; uint64_t k = pref[t]; while (1) { while (x < r && issp(*x)) ++x; if (x >= r) break; char *l = x; while (x < r && !issp(*x)) ++x; if (k < n) offsets[k] = parse_u64(l, x); else if (k < n + m) edges[k - n].v = parse_u32(l, x); else { if constexpr (std::is_same_v<Wgh, Empty>) {} else edges[k - n - m].w = parse_w(l, x); } ++k; } }, 1);
+        offsets = parlay::sequence<uint64_t>::uninitialized(n + 1); edges = parlay::sequence<Edge<T>>::uninitialized(m); skip(p); char *body = p;
+        uint64_t need = n + m + (weighted ? m : 0); int num_tasks = std::max(1, 4 * (int)parlay::num_workers()); if ((uint64_t)num_tasks > need) num_tasks = (int)need; if (num_tasks <= 0) num_tasks = 1;
+        parlay::sequence<char*> L(num_tasks + 1); L[0] = body; L[num_tasks] = ed; size_t body_len = ed - body;
+        for (int t = 1; t < num_tasks; ++t) { char *x = body + ((__uint128_t)body_len * t / num_tasks); while (x < ed && !issp(*x)) ++x; while (x < ed && issp(*x)) ++x; L[t] = x; }
+        parlay::sequence<uint64_t> cnt(num_tasks), pref(num_tasks + 1); pref[0] = 0;
+        for (int t = 0; t < num_tasks; ++t) { char *x = L[t], *r = L[t + 1]; uint64_t c = 0; while (1) { while (x < r && issp(*x)) ++x; if (x >= r) break; while (x < r && !issp(*x)) ++x; ++c; } cnt[t] = c; pref[t + 1] = pref[t] + c; }
+        if (pref[num_tasks] != need) { std::cerr << "Error: token count mismatch, got " << pref[num_tasks] << " expected " << need << "\n"; abort(); }
+        parlay::parallel_for(0, num_tasks, [&](int t) { char *x = L[t], *r = L[t + 1]; uint64_t k = pref[t]; while (1) { while (x < r && issp(*x)) ++x; if (x >= r) break; char *l = x; while (x < r && !issp(*x)) ++x; if (k < n) offsets[k] = parse_u64(l, x); else if (k < n + m) edges[k - n].idx = parse_u32(l, x); else { if constexpr (std::is_same_v<T, Empty>) {} else edges[k - n - m].wgh = parse_w(l, x); } ++k; } }, 1);
         offsets[n] = m; munmap(data, sb.st_size); close(fd);
     }
 
     void write_pbbs_format(char const *filename) {
         std::ofstream out(filename);
         if (!out) { std::cerr << "Error: Cannot open output file " << filename << "\n"; abort(); }
-        if constexpr (!std::is_same_v<Wgh, Empty>) out << "Weighted";
+        if constexpr (!std::is_same_v<T, Empty>) out << "Weighted";
         out << "AdjacencyGraph\n" << n << '\n' << m << '\n';
         for (size_t i = 0; i < n; i++) out << offsets[i] << '\n';
-        for (size_t i = 0; i < m; i++) out << edges[i].v << '\n';
-        if constexpr (!std::is_same_v<Wgh, Empty>) for (size_t i = 0; i < m; i++) out << edges[i].w << '\n';
+        for (size_t i = 0; i < m; i++) out << edges[i].idx << '\n';
+        if constexpr (!std::is_same_v<T, Empty>) for (size_t i = 0; i < m; i++) out << edges[i].wgh << '\n';
     }
 
     bool neighbors_sorted() const {
         parlay::sequence<uint8_t> ok(n, 1);
         parlay::parallel_for(0, n, [&](size_t u) {
-            for (uint64_t i = offsets[u] + 1; i < offsets[u + 1]; ++i) if (edges[i - 1].v > edges[i].v) { ok[u] = 0; return; }
-            for (uint64_t i = in_offsets[u] + 1; i < in_offsets[u + 1]; ++i) if (in_edges[i - 1].v > in_edges[i].v) { ok[u] = 0; return; }
+            for (uint64_t i = offsets[u] + 1; i < offsets[u + 1]; ++i) if (edges[i - 1].idx > edges[i].idx) { ok[u] = 0; return; }
+            for (uint64_t i = in_offsets[u] + 1; i < in_offsets[u + 1]; ++i) if (in_edges[i - 1].idx > in_edges[i].idx) { ok[u] = 0; return; }
         });
         return parlay::reduce(ok, parlay::logical_and<uint8_t>());
     }
@@ -216,9 +215,9 @@ struct Graph {
             return parlay::reduce(ok, parlay::logical_and<uint8_t>());
         };
         if (!cmp_bytes(offsets.data(), o.offsets.data(), offsets.size() * sizeof(uint64_t))) return false;
-        if (!cmp_bytes(edges.data(), o.edges.data(), edges.size() * sizeof(Edge<Wgh>))) return false;
+        if (!cmp_bytes(edges.data(), o.edges.data(), edges.size() * sizeof(Edge<T>))) return false;
         if (!cmp_bytes(in_offsets_seq.data(), o.in_offsets_seq.data(), in_offsets_seq.size() * sizeof(uint64_t))) return false;
-        if (!cmp_bytes(in_edges_seq.data(), o.in_edges_seq.data(), in_edges_seq.size() * sizeof(Edge<Wgh>))) return false;
+        if (!cmp_bytes(in_edges_seq.data(), o.in_edges_seq.data(), in_edges_seq.size() * sizeof(Edge<T>))) return false;
         return true;
     }
 };

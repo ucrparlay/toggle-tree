@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 #pragma once
-#include "internal/parallel_bitmap.h"
+#include "internal/index_set.h"
 
-namespace ParSet {
+namespace toggle {
 
 struct Active {
-    internal::ParallelBitmap active; 
+    internal::IndexSet active; 
     Active(size_t n, bool init = true) : active(n, init) {}
 
     inline bool empty() const noexcept { return active.empty(); }
@@ -42,4 +42,4 @@ struct Active {
     }
 };
 
-} // namespace ParSet
+} // namespace toggle

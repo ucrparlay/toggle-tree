@@ -1,5 +1,5 @@
 #pragma once
-#include <ParSet/ParSet.h>
+#include <toggle/toggle.h>
 
 #include <array>
 
@@ -7,8 +7,8 @@ template <class Graph>
 parlay::sequence<uint32_t> KCore(Graph& G) {
     const size_t n = G.n;
     auto result = parlay::sequence<uint32_t>(n, 0);
-    auto active = ParSet::Active(n);
-    auto frontier = ParSet::Frontier(n);
+    auto active = toggle::Active(n);
+    auto frontier = toggle::Frontier(n);
     auto D = parlay::tabulate<uint32_t>(n, [&](size_t s) {
         if (G.offsets[s + 1] - G.offsets[s] == 0) {
         active.remove(s);
@@ -33,7 +33,7 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
                 if (G.offsets[s+1]-G.offsets[s] >= LOCAL_QUEUE) {
                     result[s] = k;
                     parlay::parallel_for(G.offsets[s], G.offsets[s+1], [&](size_t i) { 
-                        uint32_t d = G.edges[i].v;
+                        uint32_t d = G.edges[i].idx;
                         if (active.contains(d)) {
                             if (__atomic_fetch_sub(&D[d], 1, __ATOMIC_RELAXED) == k + 1) {
                                 active.remove(d);
@@ -53,7 +53,7 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
                         if (G.offsets[cur_index+1]-G.offsets[cur_index]+rpos>LOCAL_QUEUE) { break; }
                         lpos++;
                         for (size_t i=G.offsets[cur_index]; i<G.offsets[cur_index+1]; i++) {
-                            cnt++; uint32_t d = G.edges[i].v;
+                            cnt++; uint32_t d = G.edges[i].idx;
                             if (active.contains(d)) {
                                 if (__atomic_fetch_sub(&D[d], 1, __ATOMIC_RELAXED) == k + 1) {
                                     active.remove(d);

@@ -8,7 +8,7 @@ double KCore_runner(Graph& G, commandLine P) {
     std::cout << "==================================================================" << std::endl;
     const char* dumppath = P.getOptionValue("-dump") == nullptr ? "disabled" : P.getOptionValue("-dump");
     int num_rounds = std::atoi(P.getOptionValue("-num_rounds"));
-    std::cout << std::right << std::setw(66) << ("Graph: " + GraphIO::extract_graph_name(P.getArgument(0))) << "\n";
+    std::cout << std::right << std::setw(66) << ("Graph: " + graph_io::extract_graph_name(P.getArgument(0))) << "\n";
     std::cout << "Dump: " << dumppath << "\n";
     std::cout << "Threads: " << num_workers() << "  Rounds: " << num_rounds << "\n";
 
@@ -25,7 +25,7 @@ double KCore_runner(Graph& G, commandLine P) {
     }
     ttt /= num_rounds;
 
-    GraphIO::process_result(dumppath, P.getArgument(0), ttt, result, true, "../../benchmarks/KCore");
+    graph_io::process_result(dumppath, P.getArgument(0), ttt, result, true, "../../benchmarks/KCore");
     std::exit(0);
     return ttt;
 }

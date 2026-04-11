@@ -1,5 +1,5 @@
 #pragma once
-#include <ParSet/ParSet.h>
+#include <toggle/toggle.h>
 #include "hashbag.h"
 
 static inline bool writemin(int& ref, int v){
@@ -30,7 +30,7 @@ parlay::sequence<int32_t> BellmanFord(Graph& G, size_t source=0) {
             uint32_t s = frt[i];
             int dist_s = dist[s];
             parlay::parallel_for(G.offsets[s], G.offsets[s + 1], [&](size_t i) {
-                uint32_t d = G.edges[i].v;
+                uint32_t d = G.edges[i].idx;
                 int nd = dist_s + G.edges[i].w;
                 if (dist[d] > nd && writemin(dist[d], nd) && writeifnot(in_next[d], round)) frontier.insert(d);
             }, 256);

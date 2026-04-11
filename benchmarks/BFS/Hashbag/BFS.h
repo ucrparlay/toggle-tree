@@ -1,5 +1,5 @@
 #pragma once
-#include <ParSet/ParSet.h>
+#include <toggle/toggle.h>
 #include <cmath>
 #include "hashbag.h"
 
@@ -7,7 +7,7 @@ template <class Graph>
 parlay::sequence<uint32_t> BFS(Graph& G, size_t s = 0) {
     const size_t n = G.n;
     uint8_t mode = 0;
-    auto active = ParSet::Active(n);
+    auto active = toggle::Active(n);
     hashbag<uint32_t> frontier(n);
     auto frontier_vertices = parlay::sequence<uint32_t>::uninitialized(n);
     auto result = parlay::sequence<uint32_t>(n, UINT32_MAX);
@@ -37,7 +37,7 @@ parlay::sequence<uint32_t> BFS(Graph& G, size_t s = 0) {
                 uint32_t u = frontier_vertices[i];
                 result[u] = round;
                 parlay::parallel_for(G.offsets[u], G.offsets[u + 1], [&](size_t j) {
-                    uint32_t v = G.edges[j].v;
+                    uint32_t v = G.edges[j].idx;
                     if (active.active.try_remove(v)) {
                         frontier.insert(v);
                     }
@@ -47,7 +47,7 @@ parlay::sequence<uint32_t> BFS(Graph& G, size_t s = 0) {
         else {
             active.for_each([&](size_t u) {
                 for (size_t i = G.in_offsets[u]; i < G.in_offsets[u + 1]; i++) {
-                    uint32_t v = G.in_edges[i].v;
+                    uint32_t v = G.in_edges[i].idx;
                     if (!active.contains(v)) {
                         frontier.insert(u);
                         return;

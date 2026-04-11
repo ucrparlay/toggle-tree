@@ -7,7 +7,7 @@
 
 #include "dijkstra.h"
 
-#include <GraphIO/GraphIO.h>
+#include <graph_io/graph_io.h>
 
 using namespace std;
 using namespace parlay;
@@ -15,7 +15,7 @@ using namespace parlay;
 template <class Algo>
 void run(Algo &algo, const Graph &G, bool verify, const char* filepath) {
     std::cout << "==================================================================" << std::endl;
-    std::cout << "### Graph: " << GraphIO::extract_graph_name(filepath) << "\n";
+    std::cout << "### Graph: " << graph_io::extract_graph_name(filepath) << "\n";
     std::cout << "### Threads: " << parlay::num_workers() << "\n";
 
     int num_rounds = 5;
@@ -25,7 +25,7 @@ void run(Algo &algo, const Graph &G, bool verify, const char* filepath) {
     for (uint32_t i = 0; i < num_rounds + base; i++) {
         auto s = perm[i];
         t.start(); result = algo.sssp(s); tt = t.stop();
-        if (!GraphIO::availability(result, 0.1)) { base++; continue; }
+        if (!graph_io::availability(result, 0.1)) { base++; continue; }
         std::cout << "    Round " << i + 1 - base << "  source: " << s << "  Warmup: "  << std::setprecision(2) << tt << std::setprecision(6);
         t.start(); result = algo.sssp(s); tt = t.stop();
         std::cout << "  time = " << tt << " sec\n";
@@ -34,7 +34,7 @@ void run(Algo &algo, const Graph &G, bool verify, const char* filepath) {
     ttt /= num_rounds;
 
     if (verify) {
-        GraphIO::process_result("disabled", filepath, ttt, result, true);  
+        graph_io::process_result("disabled", filepath, ttt, result, true);  
     }
 }
 

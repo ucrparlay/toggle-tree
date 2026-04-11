@@ -4,7 +4,7 @@
 
 #include "graph.h"
 #include "seq-bfs.h"
-#include <GraphIO/GraphIO.h>
+#include <graph_io/graph_io.h>
 
 constexpr int NUM_SRC = 5;
 constexpr int NUM_ROUND = 3;
@@ -17,14 +17,14 @@ void run(Algo &algo, const Graph &G, bool verify, NodeId num_rounds, const char*
     for (uint32_t i = 0; i < num_rounds + base; i++) {
         auto s = perm[i];
         t.start(); result = algo.bfs(s); tt = t.stop();
-        if (!GraphIO::availability(result, 0.1)) { base++; continue; }
+        if (!graph_io::availability(result, 0.1)) { base++; continue; }
         std::cout << "    Round " << i + 1 - base << "  source: " << s << "  Warmup: "  << std::setprecision(2) << tt << std::setprecision(6);
         t.start(); result = algo.bfs(s); tt = t.stop();
         std::cout << "  time = " << tt << " sec\n";
         ttt += tt;
     }
     ttt /= num_rounds;
-    GraphIO::process_result(nullptr, input_path, ttt, result, true);  
+    graph_io::process_result(nullptr, input_path, ttt, result, true);  
     printf("\n");
 }
 

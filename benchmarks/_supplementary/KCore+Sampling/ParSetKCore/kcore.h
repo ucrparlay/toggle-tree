@@ -1,6 +1,6 @@
 #include <set>
 
-#include <ParSet/ParSet.h>
+#include <toggle/toggle.h>
 #include "parlay/parallel.h"
 #include "parlay/primitives.h"
 #include "parlay/sequence.h"
@@ -45,22 +45,22 @@ class KCore {
       log2_error_factor / (init_reduce_ratio * init_reduce_ratio);
 
   const Graph &G;
-  sequence<ParSet::Active> buckets;
+  sequence<toggle::Active> buckets;
   sequence<NodeId> coreness;
   sequence<bool> alive;
   sequence<bool> sample_mode;
   sequence<Sampler> samplers;
-  ParSet::Active counting_bag;
-  ParSet::Frontier peeling_frontier;
+  toggle::Active counting_bag;
+  toggle::Frontier peeling_frontier;
 
  public:
   KCore() = delete;
   KCore(const Graph &_G)
       : G(_G), counting_bag(G.n, false), peeling_frontier(G.n) {
     size_t n = G.n;
-    buckets = parlay::tabulate<ParSet::Active>(
+    buckets = parlay::tabulate<toggle::Active>(
         num_single_buckets + num_intermediate_buckets,
-        [&](size_t) { return ParSet::Active(n, false); });
+        [&](size_t) { return toggle::Active(n, false); });
     coreness = sequence<NodeId>::uninitialized(n);
     alive = sequence<bool>::uninitialized(n);
     sample_mode = sequence<bool>::uninitialized(n);
@@ -136,7 +136,7 @@ class KCore {
 
   void count_alive_neighbors(NodeId u) {
     coreness[u] = parlay::count_if(G.edges.cut(G.offsets[u], G.offsets[u + 1]),
-                                   [&](auto &es) { return alive[es.v]; });
+                                   [&](auto &es) { return alive[es.idx]; });
   }
 
   void count_vertex(NodeId u, NodeId k, NodeId base_k) {
@@ -145,7 +145,7 @@ class KCore {
     if (coreness[u] < k) {
       NodeId alive_last_round = parlay::count_if(
           G.edges.cut(G.offsets[u], G.offsets[u + 1]),
-          [&](auto &es) { return alive[es.v] || coreness[es.v] == k; });
+          [&](auto &es) { return alive[es.idx] || coreness[es.idx] == k; });
       if (alive_last_round >= k) {
         coreness[u] = k;
         buckets[k & bucket_mask].insert(u);
@@ -166,7 +166,7 @@ class KCore {
     if (coreness[u] < k) {
       NodeId alive_last_round = parlay::count_if(
           G.edges.cut(G.offsets[u], G.offsets[u + 1]),
-          [&](auto &es) { return alive[es.v] || coreness[es.v] == k; });
+          [&](auto &es) { return alive[es.idx] || coreness[es.idx] == k; });
       if (alive_last_round >= k) {
         coreness[u] = k;
         buckets[k & bucket_mask].insert(u);
@@ -182,7 +182,7 @@ class KCore {
   void map_neighbors_parallel(NodeId u, NodeId base_k, NodeId k,
                               bool &counting_flag) {
     parallel_for(G.offsets[u], G.offsets[u + 1], [&](size_t es) {
-      auto v = G.edges[es].v;
+      auto v = G.edges[es].idx;
       if (coreness[v] > k) {
         if (enable_sampling && sample_mode[v]) {
           sample_vertex(u, v, counting_flag);
@@ -196,7 +196,7 @@ class KCore {
   void map_neighbors_parallel_wo_bucketing(NodeId u, NodeId k,
                                            bool &counting_flag) {
     parallel_for(G.offsets[u], G.offsets[u + 1], [&](size_t es) {
-      auto v = G.edges[es].v;
+      auto v = G.edges[es].idx;
       if (coreness[v] > k) {
         if (enable_sampling && sample_mode[v]) {
           sample_vertex(u, v, counting_flag);

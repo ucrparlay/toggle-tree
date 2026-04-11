@@ -3,7 +3,7 @@
 
 #include <atomic>
 
-#include <ParSet/ParSet.h>
+#include <toggle/toggle.h>
 #include "sampler.h"
 #include "utils.h"
 

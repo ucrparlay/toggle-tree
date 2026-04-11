@@ -11,10 +11,10 @@
 #include <parlay/sequence.h>
 #include "../utils/atomic_operation.h"
 
-namespace ParSet { namespace internal {
+namespace toggle { namespace internal {
 
 template <class Sequence>
-struct TournamentTree {
+struct IndexMap {
     using T = typename Sequence::value_type;
     struct Node { uint64_t bitmap; uint64_t dirty; T augval; };
     Sequence& sequence;
@@ -23,7 +23,7 @@ struct TournamentTree {
     static constexpr uint64_t idx(int32_t i, uint64_t base) noexcept { return base >> off(i); }
     static constexpr uint64_t fnd(int32_t i, uint64_t mask) noexcept { return __builtin_ctzll(__builtin_ia32_pdep_di(1ULL << i, mask)); }
 
-    TournamentTree(Sequence& _sequence): sequence(_sequence) {
+    IndexMap(Sequence& _sequence): sequence(_sequence) {
         tree = parlay::sequence<parlay::sequence<Node>>(6);
         uint64_t length = sequence.size();
         for (int32_t i=5; i>=0; i--) {

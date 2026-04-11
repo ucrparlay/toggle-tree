@@ -1,5 +1,5 @@
 #pragma once
-#include <ParSet/ParSet.h>
+#include <toggle/toggle.h>
 
 
 
@@ -7,8 +7,8 @@ template <class Graph>
 parlay::sequence<uint32_t> BFS(Graph& G, size_t s=0) {
     const size_t n = G.n;
     uint8_t mode = 0;
-    auto active = ParSet::Active(n); 
-    auto frontier = ParSet::Frontier(n);
+    auto active = toggle::Active(n); 
+    auto frontier = toggle::Frontier(n);
     auto result = parlay::sequence<uint32_t>(n, UINT32_MAX); 
     frontier.insert_next(s);
     active.remove(s);
@@ -23,7 +23,7 @@ parlay::sequence<uint32_t> BFS(Graph& G, size_t s=0) {
                 frontier.for_each([&](uint32_t s) { 
                     result[s] = round;
                     parlay::parallel_for(G.offsets[s], G.offsets[s+1], [&](size_t i) { 
-                        uint32_t d = G.edges[i].v;
+                        uint32_t d = G.edges[i].idx;
                         if (active.contains(d)) {
                             active.remove(d); frontier.insert_next(d); result[d] = round+1;
                         }
@@ -34,7 +34,7 @@ parlay::sequence<uint32_t> BFS(Graph& G, size_t s=0) {
             frontier.for_each([&](uint32_t s) { 
                 result[s] = round;
                 parlay::parallel_for(G.offsets[s], G.offsets[s+1], [&](size_t i) { 
-                    uint32_t d = G.edges[i].v;
+                    uint32_t d = G.edges[i].idx;
                     if (active.contains(d)) {
                         active.remove(d); frontier.insert_next(d);
                     }
@@ -44,7 +44,7 @@ parlay::sequence<uint32_t> BFS(Graph& G, size_t s=0) {
         else if (mode == 1) {  // Direction Optimization
             active.for_each([&](size_t s) {
                 for (size_t i = G.in_offsets[s]; i < G.in_offsets[s+1]; i++) { 
-                    uint32_t d = G.in_edges[i].v;
+                    uint32_t d = G.in_edges[i].idx;
                     if (!active.contains(d)) { 
                         frontier.insert_next(s); 
                         return;
@@ -67,8 +67,8 @@ parlay::sequence<uint32_t> BFS(Graph& G, size_t s=0) {
                 if (G.offsets[s+1]-G.offsets[s] >= LOCAL_QUEUE) {
                     uint32_t dist = result[s];
                     parlay::parallel_for(G.offsets[s], G.offsets[s+1], [&](size_t i) { 
-                        uint32_t d = G.edges[i].v;
-                        if (ParSet::write_min(result[d], dist+1)) {
+                        uint32_t d = G.edges[i].idx;
+                        if (toggle::write_min(result[d], dist+1)) {
                             if (dist+1==round+STRIDE) { frontier.insert_next(d); }
                             else { self(self, d); }
                         }
@@ -84,8 +84,8 @@ parlay::sequence<uint32_t> BFS(Graph& G, size_t s=0) {
                         if (G.offsets[cur_index+1]-G.offsets[cur_index]+rpos>LOCAL_QUEUE) { break; }
                         lpos++;
                         for (size_t i=G.offsets[cur_index]; i<G.offsets[cur_index+1]; i++) {
-                            cnt++; uint32_t d = G.edges[i].v;
-                            if (ParSet::write_min(result[d], cur_dist+1)) {
+                            cnt++; uint32_t d = G.edges[i].idx;
+                            if (toggle::write_min(result[d], cur_dist+1)) {
                                 if (cur_dist+1==round+STRIDE) { frontier.insert_next(d); }
                                 else { local_queue[rpos] = d; rpos++; }
                             }

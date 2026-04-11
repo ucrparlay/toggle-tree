@@ -32,10 +32,10 @@ class WEdge {
 
   bool operator<(const WEdge &rhs) const {
     if constexpr (std::is_same_v<EdgeTy, Empty>) {
-      return v < rhs.v;
+      return v < rhs.idx;
     } else {
-      if (v != rhs.v) {
-        return v < rhs.v;
+      if (v != rhs.idx) {
+        return v < rhs.idx;
       }
       return w < rhs.w;
     }
@@ -43,9 +43,9 @@ class WEdge {
 
   bool operator==(const WEdge &rhs) const {
     if constexpr (std::is_same_v<EdgeTy, Empty>) {
-      return v == rhs.v;
+      return v == rhs.idx;
     } else {
-      return v == rhs.v && w == rhs.w;
+      return v == rhs.idx && w == rhs.w;
     }
   }
 };
@@ -85,7 +85,7 @@ class Graph {
     parlay::sequence<std::pair<NodeId, Edge>> edgelist(m);
     parlay::parallel_for(0, n, [&](NodeId u) {
       parlay::parallel_for(offsets[u], offsets[u + 1], [&](EdgeId i) {
-        edgelist[i] = std::make_pair(edges[i].v, Edge(u, edges[i].w));
+        edgelist[i] = std::make_pair(edges[i].idx, Edge(u, edges[i].w));
       });
     });
     parlay::sort_inplace(
@@ -94,7 +94,7 @@ class Graph {
           if (a.first != b.first) {
             return a.first < b.first;
           }
-          return a.second.v < b.second.v;
+          return a.second.idx < b.second.idx;
         });
     in_offsets = parlay::sequence<EdgeId>(n + 1, m);
     in_edges = parlay::sequence<Edge>(m);
@@ -134,7 +134,7 @@ class Graph {
     });
     offsets[n] = m;
     parlay::parallel_for(0, m, [&](size_t i) {
-      edges[i].v = parlay::internal::chars_to_int_t<NodeId>(
+      edges[i].idx = parlay::internal::chars_to_int_t<NodeId>(
           make_slice(tokens_seq[i + n + 3]));
     });
     if (weighted_input) {
@@ -185,7 +185,7 @@ class Graph {
       offsets[i] = reinterpret_cast<uint64_t *>(data + 3 * 8)[i];
     });
     parlay::parallel_for(0, m, [&](size_t i) {
-      edges[i].v = reinterpret_cast<uint32_t *>(data + 3 * 8 + (n + 1) * 8)[i];
+      edges[i].idx = reinterpret_cast<uint32_t *>(data + 3 * 8 + (n + 1) * 8)[i];
     });
     if (data) {
       const void *b = data;
@@ -266,7 +266,7 @@ class Graph {
     chars.insert(chars.end(),
                  parlay::flatten(parlay::tabulate(m * 2, [&](size_t i) {
                    if (i % 2 == 0) {
-                     return parlay::to_chars(edges[i / 2].v);
+                     return parlay::to_chars(edges[i / 2].idx);
                    } else {
                      return parlay::to_chars('\n');
                    }
@@ -289,7 +289,7 @@ class Graph {
     assert(sizeof(NodeId) == sizeof(uint32_t));
     size_t sizes = (n + 1) * 8 + m * 4 + 3 * 8;
     auto tmp_edges =
-        parlay::tabulate<NodeId>(m, [&](size_t i) { return edges[i].v; });
+        parlay::tabulate<NodeId>(m, [&](size_t i) { return edges[i].idx; });
 
     std::ofstream ofs(filename);
     if (!ofs.is_open()) {
@@ -320,7 +320,7 @@ class Graph {
     uint32_t range = r - l + 1;
     parlay::parallel_for(0, n, [&](NodeId u) {
       parlay::parallel_for(offsets[u], offsets[u + 1], [&](EdgeId i) {
-        NodeId v = edges[i].v;
+        NodeId v = edges[i].idx;
         edges[i].w = ((parlay::hash32(u) ^ parlay::hash32(v)) % range) + l;
       });
     });
@@ -331,7 +331,7 @@ class Graph {
     parlay::parallel_for(0, n, [&](size_t i) {
       size_t pre = n + 1;
       for (size_t j = offsets[i]; j < offsets[i + 1]; j++) {
-        NodeId v = edges[j].v;
+        NodeId v = edges[j].idx;
         if (i == v) {
           write_add(&self_loops, 1);
         }
@@ -357,14 +357,14 @@ class Graph {
       }
     });
     parlay::parallel_for(0, m, [&](size_t i) {
-      NodeId u = edges[i].v;
+      NodeId u = edges[i].idx;
       assert(u >= 0 && u < n);
     });
     bool sorted = true;
     parlay::parallel_for(0, n, [&](NodeId u) {
       parlay::parallel_for(offsets[u], offsets[u + 1], [&](size_t i) {
-        NodeId v = edges[i].v;
-        if (i != offsets[u] && v < edges[i - 1].v && sorted == true) {
+        NodeId v = edges[i].idx;
+        if (i != offsets[u] && v < edges[i - 1].idx && sorted == true) {
           sorted = false;
         }
       });
@@ -376,7 +376,7 @@ class Graph {
     if (symmetrized) {
       parlay::parallel_for(0, n, [&](NodeId u) {
         parlay::parallel_for(offsets[u], offsets[u + 1], [&](size_t i) {
-          NodeId v = edges[i].v;
+          NodeId v = edges[i].idx;
           auto e = WEdge(u, edges[i].w);
           if (*std::lower_bound(edges.begin() + offsets[v],
                                 edges.begin() + offsets[v + 1], e) != e) {
@@ -422,7 +422,7 @@ class Graph {
     offsets = parlay::sequence<EdgeId>(n + 1, m);
     edges = parlay::sequence<Edge>(m);
     parlay::parallel_for(0, m, [&](size_t i) {
-      edges[i].v = edgelist[i].second;
+      edges[i].idx = edgelist[i].second;
       if (i == 0 || edgelist[i].first != edgelist[i - 1].first) {
         offsets[edgelist[i].first] = i;
       }
@@ -456,7 +456,7 @@ Graph<NodeId, EdgeId, EdgeTy> edgelist2graph(
         if (a.first != b.first) {
           return a.first < b.first;
         }
-        return a.second.v < b.second.v;
+        return a.second.idx < b.second.idx;
       });
   G.offsets = parlay::sequence<EdgeId>(n + 1, m);
   G.edges = parlay::sequence<Edge>(m);
@@ -483,7 +483,7 @@ Graph make_symmetrized(const Graph &G) {
   parlay::sequence<std::pair<NodeId, Edge>> edgelist(m * 2);
   parlay::parallel_for(0, n, [&](NodeId u) {
     parlay::parallel_for(G.offsets[u], G.offsets[u + 1], [&](EdgeId i) {
-      NodeId v = G.edges[i].v;
+      NodeId v = G.edges[i].idx;
       EdgeTy w = G.edges[i].w;
       edgelist[i * 2] = std::make_pair(u, Edge(v, w));
       edgelist[i * 2 + 1] = std::make_pair(v, Edge(u, w));
@@ -492,9 +492,9 @@ Graph make_symmetrized(const Graph &G) {
   sort_inplace(make_slice(edgelist));
   auto pred = parlay::delayed_seq<bool>(m * 2, [&](size_t i) {
     if (i != 0 && edgelist[i].first == edgelist[i - 1].first &&
-        edgelist[i].second.v == edgelist[i - 1].second.v) {
+        edgelist[i].second.idx == edgelist[i - 1].second.idx) {
       return false;
-    } else if (edgelist[i].first == edgelist[i].second.v) {
+    } else if (edgelist[i].first == edgelist[i].second.idx) {
       return false;
     }
     return true;
@@ -514,7 +514,7 @@ Graph Transpose(const Graph &G) {
   parlay::sequence<std::pair<NodeId, Edge>> edgelist(m);
   parlay::parallel_for(0, n, [&](NodeId u) {
     parlay::parallel_for(G.offsets[u], G.offsets[u + 1], [&](EdgeId i) {
-      edgelist[i] = std::make_pair(G.edges[i].v, Edge(u, G.edges[i].w));
+      edgelist[i] = std::make_pair(G.edges[i].idx, Edge(u, G.edges[i].w));
     });
   });
   return edgelist2graph<NodeId, EdgeId, EdgeTy>(edgelist, n, m);

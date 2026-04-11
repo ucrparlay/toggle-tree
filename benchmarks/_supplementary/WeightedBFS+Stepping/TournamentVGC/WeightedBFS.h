@@ -1,11 +1,11 @@
 #pragma once
-#include <ParSet/ParSet.h>
+#include <toggle/toggle.h>
 
 template <class Graph, class TournamentTree>
 void edgemap(Graph&G, uint32_t s, parlay::sequence<int32_t>& dist, TournamentTree& tree, uint32_t maxiter) {
     int32_t dist_s = dist[s];
     parlay::parallel_for(G.offsets[s], G.offsets[s + 1], [&](size_t i) {
-        uint32_t d = G.edges[i].v;
+        uint32_t d = G.edges[i].idx;
         int32_t w = G.edges[i].w;
         if (dist[d] > dist_s + w && tree.update(d, dist_s + w)) {
             if (dist_s + w <= maxiter) {
@@ -19,8 +19,8 @@ template <class Graph>
 parlay::sequence<int32_t> WeightedBFS(Graph& G, size_t source=0) {
     const size_t n = G.n;
     auto dist = parlay::sequence<int32_t>(n, INT32_MAX);
-    auto frontier = ParSet::Frontier(n);
-    auto tree = ParSet::internal::TournamentTree(dist); 
+    auto frontier = toggle::Frontier(n);
+    auto tree = toggle::internal::TournamentTree(dist); 
     tree.update(source, 0); 
     uint32_t rho = 2000000;
     uint32_t mode = 0; double delta = 1; uint32_t lastex=0, thisex = 0;
@@ -32,7 +32,7 @@ parlay::sequence<int32_t> WeightedBFS(Graph& G, size_t source=0) {
             thisex = tree.extract_min(threshold, [&] (size_t s) { 
                 int32_t dist_s = dist[s];
                 parlay::parallel_for(G.offsets[s], G.offsets[s + 1], [&](size_t i) {
-                    uint32_t d = G.edges[i].v;
+                    uint32_t d = G.edges[i].idx;
                     int32_t w = G.edges[i].w;
                     if (dist[d] > dist_s + w) {
                         tree.update(d, dist_s + w);

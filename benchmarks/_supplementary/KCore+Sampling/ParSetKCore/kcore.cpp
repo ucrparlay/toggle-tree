@@ -47,7 +47,7 @@ void pal_verifier(const Graph &G, const sequence<NodeId> &act_core) {
           if (exp_core[u] == k + i) {
             write_max(&max_core, k + i);
             parallel_for(G.offsets[u], G.offsets[u + 1], [&](size_t es) {
-              auto v = G.edges[es].v;
+              auto v = G.edges[es].idx;
               if (exp_core[v] > k + i) {
                 auto [id, succeed] =
                     fetch_and_add_bounded(&exp_core[v], -1, k + i);
@@ -89,7 +89,7 @@ void verifier(const Graph &G, const sequence<NodeId> &act_core) {
       if (exp_core[u] == i) {
         max_core = max(max_core, i);
         for (size_t j = G.offsets[u]; j < G.offsets[u + 1]; j++) {
-          NodeId v = G.edges[j].v;
+          NodeId v = G.edges[j].idx;
           if (exp_core[v] > i) {
             exp_core[v]--;
             buckets[exp_core[v]].push_back(v);

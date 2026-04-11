@@ -35,12 +35,12 @@ struct Edge {
   Edge() : v(0), w(0){};
   Edge(NodeId _v, EdgeTy _w) : v(_v), w(_w) {}
   bool operator<(const Edge& rhs) const {
-    if (v != rhs.v) {
-      return v < rhs.v;
+    if (v != rhs.idx) {
+      return v < rhs.idx;
     }
     return w < rhs.w;
   }
-  bool operator!=(const Edge& rhs) const { return v != rhs.v || w != rhs.w; }
+  bool operator!=(const Edge& rhs) const { return v != rhs.idx || w != rhs.w; }
 };
 
 class Graph {
@@ -61,7 +61,7 @@ class Graph {
     }
     parallel_for(0, n, [&](size_t i) {
       for (size_t j = offset[i]; j < offset[i + 1]; j++) {
-        edge[j].w = ((hash32(i) ^ hash32(edge[j].v)) & (WEIGHT - 1)) + 1;
+        edge[j].w = ((hash32(i) ^ hash32(edge[j].idx)) & (WEIGHT - 1)) + 1;
       }
     });
   }
@@ -88,7 +88,7 @@ class Graph {
     });
     offset[n] = m;
     parallel_for(0, m, [&](size_t i) {
-      edge[i].v =
+      edge[i].idx =
           internal::chars_to_int_t<NodeId>(make_slice(tokens_seq[i + n + 3]));
     });
     if (weighted) {
@@ -159,7 +159,7 @@ class Graph {
     }
     uint32_t* fptr32 = (uint32_t*)fptr;
     for (size_t i = 0; i < m; i++) {
-      edge[i].v = *fptr32++;
+      edge[i].idx = *fptr32++;
     }
     if (m % 2) fptr32++;  // padding
     for (size_t i = 0; i < m; i++) {
@@ -198,7 +198,7 @@ class Graph {
       offset[i] = reinterpret_cast<uint64_t*>(data + 3 * 8)[i];
     });
     parallel_for(0, m, [&](size_t i) {
-      edge[i].v = reinterpret_cast<uint32_t*>(data + 3 * 8 + (n + 1) * 8)[i];
+      edge[i].idx = reinterpret_cast<uint32_t*>(data + 3 * 8 + (n + 1) * 8)[i];
     });
 
     if (data) {
@@ -241,7 +241,7 @@ class Graph {
 
   if (bytes == unweighted_bytes) {
     parallel_for(0, m, [&](size_t i) {
-      edge[i].v = reinterpret_cast<uint32_t*>(data + 3 * 8 + (n + 1) * 8)[i];
+      edge[i].idx = reinterpret_cast<uint32_t*>(data + 3 * 8 + (n + 1) * 8)[i];
       edge[i].w = 0;
     });
     weighted = false;
@@ -254,7 +254,7 @@ class Graph {
 
     auto* p = reinterpret_cast<BinaryEdge*>(data + 3 * 8 + (n + 1) * 8);
     parallel_for(0, m, [&](size_t i) {
-      edge[i].v = p[i].v;
+      edge[i].idx = p[i].idx;
       edge[i].w = p[i].w;
     });
     weighted = true;
@@ -308,7 +308,7 @@ class Graph {
       ofs << offset[i] << '\n';
     }
     for (size_t i = 0; i < m; i++) {
-      ofs << edge[i].v << '\n';
+      ofs << edge[i].idx << '\n';
     }
     if (weighted) {
       for (size_t i = 0; i < m; i++) {
@@ -334,7 +334,7 @@ class Graph {
       ofs.write(reinterpret_cast<char*>(edge.begin()), m * sizeof(Edge));
     } else {
       sequence<NodeId> tmp_edge(m);
-      parallel_for(0, m, [&](size_t i) { tmp_edge[i] = edge[i].v; });
+      parallel_for(0, m, [&](size_t i) { tmp_edge[i] = edge[i].idx; });
       ofs.write(reinterpret_cast<char*>(tmp_edge.begin()), m * sizeof(NodeId));
     }
     if (directed) {
@@ -342,14 +342,14 @@ class Graph {
       sequence<Edge> inv_edge(m);
       parallel_for(0, n, [&](size_t i) {
         for (size_t j = offset[i]; j < offset[i + 1]; j++) {
-          write_add(&inv_offset[edge[j].v], 1);
+          write_add(&inv_offset[edge[j].idx], 1);
         }
       });
       scan_inplace(make_slice(inv_offset));
       sequence<EdgeId> tmp_offset = inv_offset;
       parallel_for(0, n, [&](size_t i) {
         parallel_for(offset[i], offset[i + 1], [&](size_t j) {
-          size_t pos = fetch_and_add(&tmp_offset[edge[j].v], 1);
+          size_t pos = fetch_and_add(&tmp_offset[edge[j].idx], 1);
           inv_edge[pos] = Edge(i, edge[j].w);
         });
       });
@@ -363,7 +363,7 @@ class Graph {
         ofs.write(reinterpret_cast<char*>(inv_edge.begin()), m * sizeof(Edge));
       } else {
         sequence<NodeId> tmp_edge(m);
-        parallel_for(0, m, [&](size_t i) { tmp_edge[i] = inv_edge[i].v; });
+        parallel_for(0, m, [&](size_t i) { tmp_edge[i] = inv_edge[i].idx; });
         ofs.write(reinterpret_cast<char*>(tmp_edge.begin()),
                   m * sizeof(NodeId));
       }
@@ -382,7 +382,7 @@ class Graph {
       fwrite(&offset[i], sizeof(uint64_t), 1, fp);
     }
     for (size_t i = 0; i < m; i++) {
-      fwrite(&edge[i].v, sizeof(uint32_t), 1, fp);
+      fwrite(&edge[i].idx, sizeof(uint32_t), 1, fp);
     }
     if (m % 2) {
       uint32_t padding = 0;
@@ -403,8 +403,8 @@ class Graph {
       parallel_for(
           offset[i], offset[i + 1],
           [&](size_t j) {
-            edgelist[j * 2] = {i, edge[j].v, edge[j].w};
-            edgelist[j * 2 + 1] = {edge[j].v, i, edge[j].w};
+            edgelist[j * 2] = {i, edge[j].idx, edge[j].w};
+            edgelist[j * 2 + 1] = {edge[j].idx, i, edge[j].w};
           },
           BLOCK_SIZE);
     });
@@ -444,7 +444,7 @@ class Graph {
     parallel_for(0, n, [&](size_t i) {
       parallel_for(offset[i], offset[i + 1], [&](size_t j) {
         if (j + 1 < offset[i + 1]) {
-          if (edge[j].v > edge[j + 1].v) {
+          if (edge[j].idx > edge[j + 1].idx) {
             ordered = false;
           }
         }
@@ -464,7 +464,7 @@ class Graph {
     parallel_for(0, n, [&](size_t i) {
       parallel_for(offset[i], offset[i + 1], [&](size_t j) {
         Edge es = Edge(i, edge[j].w);
-        NodeId v = edge[j].v;
+        NodeId v = edge[j].idx;
         if (*lower_bound(edge.begin() + offset[v], edge.begin() + offset[v + 1],
                          es) != es) {
           _symmetrized = false;
@@ -482,7 +482,7 @@ class Graph {
     parallel_for(0, n, [&](size_t i) {
       size_t pre = ULONG_MAX;
       for (size_t j = offset[i]; j < offset[i + 1]; j++) {
-        NodeId v = edge[j].v;
+        NodeId v = edge[j].idx;
         if (i == v) {
           write_add(&self_loop, 1);
         }
@@ -512,7 +512,7 @@ class Graph {
     constexpr int LOG2_MAX = 30;
     EdgeTy weight[LOG2_MAX] = {};
     parallel_for(0, m, [&](size_t i) {
-      int v = ceil(log2(edge[i].v + 1));
+      int v = ceil(log2(edge[i].idx + 1));
       write_add(&weight[v], 1);
     });
     printf("Weight distribution:\n");
@@ -537,7 +537,7 @@ class Graph {
       if (i == 0 || edgelist[i].first != edgelist[i - 1].first) {
         offset[edgelist[i].first] = i;
       }
-      edge[i].v = edgelist[i].second;
+      edge[i].idx = edgelist[i].second;
     });
     auto offset_seq = make_slice(offset.rbegin(), offset.rend());
     auto M = parlay::minimum<NodeId>();
@@ -550,7 +550,7 @@ class Graph {
     // for (size_t i = 0; i < n; i++) {
     // printf("edgeslist[%zu]: ", i);
     // for (size_t j = offset[i]; j < offset[i + 1]; j++) {
-    // printf("%u%c", edge[j].v, " \n"[j + 1 == offset[i + 1]]);
+    // printf("%u%c", edge[j].idx, " \n"[j + 1 == offset[i + 1]]);
     //}
     //}
   }

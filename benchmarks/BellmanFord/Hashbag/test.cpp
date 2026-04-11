@@ -1,5 +1,5 @@
 #include <parlay/io.h>
-#include <GraphIO/GraphIO.h>
+#include <graph_io/graph_io.h>
 #include "BellmanFord.h"
 #define Algorithm BellmanFord
 
@@ -8,7 +8,7 @@ int main(int argc, char** argv) {
     uint32_t num_rounds = (argc == 2) ? 3 : std::atoi(argv[2]);
     const char* dumppath = (argc == 3) ? "disabled" : argv[3];
 
-    GraphIO::Graph<int32_t> G(filepath);
+    graph_io::Graph<int32_t> G(filepath);
     std::cout << "==================================================================\n";
     std::cout << std::right << std::setw(66) << ("Graph: " + G.name) << "\n";
     std::cout << "Load: " << G.load_time << "  Dump: " << dumppath << "\n";
@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
     for (uint32_t i = 0; i < num_rounds + base; i++) {
         auto s = perm[i];
         t.start(); result = Algorithm(G, s); tt = t.stop();
-        if (!GraphIO::availability(result, 0.1)) { base++; continue; }
+        if (!graph_io::availability(result, 0.1)) { base++; continue; }
         std::cout << "    Round " << i + 1 - base << "  source: " << s << "  Warmup: "  << std::setprecision(2) << tt << std::setprecision(6);
         t.start(); result = Algorithm(G, s); tt = t.stop();
         std::cout << "  time = " << tt << " sec\n";
@@ -28,6 +28,6 @@ int main(int argc, char** argv) {
     }
     ttt /= num_rounds;
     
-    GraphIO::process_result(dumppath, filepath, ttt, result, true);  
+    graph_io::process_result(dumppath, filepath, ttt, result, true);  
     return 0;
 }

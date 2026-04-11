@@ -7,7 +7,7 @@
 #include <fstream>
 #include <utility>
 
-#include <ParSet/ParSet.h>
+#include <toggle/toggle.h>
 #include "hashbag.h"
 #include "parlay/primitives.h"
 #include "sampler.h"
@@ -38,7 +38,7 @@ class KCoreSampling {
       log2_error_factor / (init_reduce_ratio * init_reduce_ratio);
 
   Graph& G;
-  ParSet::Active active;
+  toggle::Active active;
   hashbag<NodeId> frontier;
   hashbag<NodeId> counting_bag;
   parlay::sequence<NodeId> frontier_buffer;
@@ -87,7 +87,7 @@ class KCoreSampling {
 
   void count_alive_neighbors(NodeId u) {
     coreness[u] = parlay::count_if(G.edges.cut(G.offsets[u], G.offsets[u + 1]),
-                                   [&](auto& es) { return active.contains(es.v); });
+                                   [&](auto& es) { return active.contains(es.idx); });
   }
 
   void count_vertex(NodeId u, NodeId k) {
@@ -96,7 +96,7 @@ class KCoreSampling {
     if (coreness[u] < k) {
       NodeId alive_last_round = parlay::count_if(
           G.edges.cut(G.offsets[u], G.offsets[u + 1]),
-          [&](auto& es) { return active.contains(es.v) || coreness[es.v] == k; });
+          [&](auto& es) { return active.contains(es.idx) || coreness[es.idx] == k; });
       if (alive_last_round >= k) {
         coreness[u] = k;
         if (active.try_remove(u)) {
@@ -122,8 +122,8 @@ class KCoreSampling {
   }
 
   void map_neighbors(NodeId u, NodeId k, bool& counting_flag) {
-    ParSet::adaptive_for(G.offsets[u], G.offsets[u + 1], [&](size_t i) {
-      NodeId v = G.edges[i].v;
+    toggle::adaptive_for(G.offsets[u], G.offsets[u + 1], [&](size_t i) {
+      NodeId v = G.edges[i].idx;
       if (!active.contains(v)) {
         return;
       }

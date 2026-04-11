@@ -7,7 +7,7 @@
 
 #include <parlay/io.h>
 #include <parlay/parallel.h>
-#include <GraphIO/GraphIO.h>
+#include <graph_io/graph_io.h>
 
 #include "../../../BFS/Hashbag/BFS.h"
 #include "../../../Coloring/Hashbag/Coloring.h"
@@ -25,7 +25,7 @@ std::vector<size_t> worker_counts(size_t max_workers) {
     return counts;
 }
 
-double run_bfs_rounds(GraphIO::Graph<>& G, const parlay::sequence<uint32_t>& perm, uint32_t num_rounds) {
+double run_bfs_rounds(graph_io::Graph<>& G, const parlay::sequence<uint32_t>& perm, uint32_t num_rounds) {
     parlay::internal::timer t;
     double tt = 0.0;
     double total = 0.0;
@@ -37,7 +37,7 @@ double run_bfs_rounds(GraphIO::Graph<>& G, const parlay::sequence<uint32_t>& per
         t.start();
         result = BFS(G, s);
         tt = t.stop();
-        if (!GraphIO::availability(result, 0.1)) {
+        if (!graph_io::availability(result, 0.1)) {
             base++;
             continue;
         }
@@ -51,7 +51,7 @@ double run_bfs_rounds(GraphIO::Graph<>& G, const parlay::sequence<uint32_t>& per
 }
 
 template <class Algorithm>
-double run_rounds(GraphIO::Graph<>& G, uint32_t num_rounds, Algorithm&& algorithm) {
+double run_rounds(graph_io::Graph<>& G, uint32_t num_rounds, Algorithm&& algorithm) {
     parlay::internal::timer t;
     t.start();
     auto result = algorithm(G);
@@ -96,7 +96,7 @@ int main(int argc, char** argv) {
     uint32_t num_rounds = (argc == 2) ? 3 : std::atoi(argv[2]);
     const char* outpath = (argc >= 4) ? argv[3] : "speedup.tsv";
 
-    GraphIO::Graph G(filepath);
+    graph_io::Graph G(filepath);
     auto max_workers = parlay::num_workers();
 
     if (G.n < num_rounds) {

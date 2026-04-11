@@ -1,5 +1,5 @@
 #pragma once
-#include <ParSet/ParSet.h>
+#include <toggle/toggle.h>
 #include "hashbag.h"
 
 template <class Graph>
@@ -7,7 +7,7 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
     const size_t n = G.n;
     auto result = parlay::sequence<uint32_t>(n, 0);
 
-    auto active = ParSet::Active(n);
+    auto active = toggle::Active(n);
     auto frontier = hashbag<uint32_t>(n);
     auto frt = parlay::sequence<uint32_t>(n, 0);
     auto D = parlay::tabulate<uint32_t>(n, [&](size_t s){ 
@@ -27,7 +27,7 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
                 uint32_t s = frt[i];
                 result[s] = k;
                 parlay::parallel_for(G.offsets[s], G.offsets[s + 1], [&](size_t j) {
-                    uint32_t d = G.edges[j].v;
+                    uint32_t d = G.edges[j].idx;
                     if (active.contains(d)) {
                         if (__atomic_fetch_sub(&D[d], 1, __ATOMIC_RELAXED) == k+1) {
                             active.remove(d); frontier.insert(d);

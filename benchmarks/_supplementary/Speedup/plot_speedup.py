@@ -11,12 +11,12 @@ import cairo
 
 ROOT = Path(__file__).resolve().parent
 INPUTS = {
-    "ParSet": ROOT / "ParSet" / "RoadUSA_sym.tsv",
+    "toggle": ROOT / "toggle" / "RoadUSA_sym.tsv",
     "Hashbag": ROOT / "Hashbag" / "RoadUSA_sym.tsv",
     "GBBS": ROOT / "GBBS" / "RoadUSA_sym.tsv",
 }
 RUN_DIRS = {
-    "ParSet": ROOT / "ParSet",
+    "toggle": ROOT / "toggle",
     "Hashbag": ROOT / "Hashbag",
     "GBBS": ROOT / "GBBS",
 }
@@ -134,7 +134,7 @@ def draw_chart(path, graph, alg, series):
     ctx.restore()
 
     styles = {
-        "ParSet": (0.15, 0.45, 0.8),
+        "toggle": (0.15, 0.45, 0.8),
         "Hashbag": (0.85, 0.35, 0.1),
         "GBBS": (0.1, 0.65, 0.3),
     }
@@ -159,7 +159,7 @@ def draw_chart(path, graph, alg, series):
 
     legend_x = left + 20
     legend_y = top + 30
-    for i, name in enumerate(["ParSet", "Hashbag", "GBBS"]):
+    for i, name in enumerate(["toggle", "Hashbag", "GBBS"]):
         y = legend_y + i * 32
         ctx.set_source_rgb(*styles[name])
         ctx.set_line_width(3)
@@ -188,8 +188,8 @@ def main():
     datasets = {name: organize(load_rows(path)) for name, path in INPUTS.items()}
 
     for alg in ALGORITHMS:
-        graph = datasets["ParSet"][alg]["graph"]
-        base = max(alg_data[alg]["times"][1] for alg_data in datasets.values())
+        graph = datasets["toggle"][alg]["graph"]
+        base = max(alg_data[alg]["times"][1] for alg_data in datasets.idxalues())
         series = {name: speedups(alg_data[alg]["times"], base) for name, alg_data in datasets.items()}
         out = ROOT / f"{alg}+{graph}1.png"
         draw_chart(out, graph, alg, series)
