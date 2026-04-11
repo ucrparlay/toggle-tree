@@ -19,6 +19,7 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
     parlay::internal::timer t;
     double t0 = 0;
     while (!active.empty()) {
+        t.start();
         uint32_t k = active.reduce_min(D);
         active.for_each([&](uint32_t s) {
             if (D[s] == k) {
@@ -26,6 +27,7 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
                 frontier.insert_next(s);
             }
         });
+        t0 += t.stop();
         while (frontier.advance_to_next()) {
             const size_t LOCAL_QUEUE = 128;
             const size_t STRIDE = 8;
@@ -71,6 +73,7 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
             frontier.for_each([&](uint32_t s) { local_search(local_search, s, 0); });
         }
     }
-
+    std::cerr << "\nt0=" << t0 << "\n";
     return result;
+    
 }
