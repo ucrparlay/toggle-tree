@@ -3,5 +3,4 @@ config.sh
 test
 *.csv
 *.png
-DumpedGBBS.txt
-DumpedParSet.txt
+*.txt

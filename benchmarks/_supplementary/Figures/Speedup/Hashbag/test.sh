@@ -4,7 +4,11 @@ make clean
 make
 source ../../../../../benchmark_utils/scripts/config.sh
 
-OUTFILE="speedup.tsv"
-numactl -i all ./test "${TEST}.bin" "${NUM_ROUNDS}" "${OUTFILE}"
+numactl -i all ./test "${TEST}.bin" "${NUM_ROUNDS}"
 echo "------------------------------------------------------------------"
-cat "${OUTFILE}"
+for f in bfs.txt kcore.txt coloring.txt; do
+    if [[ -f "$f" ]]; then
+        echo "$f"
+        tail -n 1 "$f"
+    fi
+done
