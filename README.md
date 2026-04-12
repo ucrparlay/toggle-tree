@@ -18,7 +18,7 @@ They only rely on parlaylib, and we have vendored it for benchmarking.
 Benchmarking GBBS baseline Requires bazel 7.7.1.
 Bazel is only used to build GBBS baselines, and has nothing to do with Toggle Tree.
 
-### 1.2. onfiguration
+### 1.2. Configuration
 
 ```bash
 [benchmark_utils/scripts]$ cp example_of_config.sh config.sh
