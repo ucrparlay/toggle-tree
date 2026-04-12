@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-source ../../../benchmark_utils/scripts/config.sh
+source ../scripts/config.sh
 make clean
 make
 for type in "${TYPES[@]}"; do
