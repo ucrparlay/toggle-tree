@@ -9,9 +9,9 @@
 #include <parlay/parallel.h>
 #include <graph_io/graph_io.h>
 
-#include "../../../BFS/toggle/BFS.h"
-#include "../../../Coloring/toggle/Coloring.h"
-#include "../../../KCore/toggle/KCore.h"
+#include "../../../../BFS/ToT/BFS.h"
+#include "../../../../Coloring/ToT/Coloring.h"
+#include "../../../../KCore/ToT/KCore.h"
 
 namespace {
 

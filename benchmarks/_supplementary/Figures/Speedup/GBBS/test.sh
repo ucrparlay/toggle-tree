@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -e
 
-cd ../../../../benchmark_utils/bazel
+cd ../../../../../benchmark_utils/bazel
 source ../scripts/config.sh
 
-OUTFILE="../../benchmarks/_supplementary/Speedup/GBBS/speedup.tsv"
+OUTFILE="../../benchmarks/_supplementary/Figures/Speedup/GBBS/speedup.tsv"
 rm -f "${OUTFILE}"
 #BAZEL_OUT="--output_user_root=../../benchmarks/_supplementary/Speedup/GBBS"
 BAZEL_CMD="bazel --batch ${BAZEL_OUT}"
-SPEEDUP_REPO="--override_repository=GBBS_Speedup=../../benchmarks/_supplementary/Speedup/GBBS"
+SPEEDUP_REPO="--override_repository=GBBS_Speedup=../../benchmarks/_supplementary/Figures/Speedup/GBBS"
 MAX_THREADS="${PARLAY_NUM_THREADS}"
 
 run_sweep() {

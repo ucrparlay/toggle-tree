@@ -9,9 +9,9 @@
 #include <parlay/parallel.h>
 #include <graph_io/graph_io.h>
 
-#include "../../../BFS/Hashbag/BFS.h"
-#include "../../../Coloring/Hashbag/Coloring.h"
-#include "../../../KCore/Hashbag/KCore.h"
+#include "../../../../BFS/Hashbag/BFS.h"
+#include "../../../../Coloring/Hashbag/Coloring.h"
+#include "../../../../KCore/Hashbag/KCore.h"
 
 namespace {
 
