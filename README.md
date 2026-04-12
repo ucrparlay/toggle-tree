@@ -48,11 +48,6 @@ Scripts for testing all the algorithms are also provided:
 
 ```bash
 [benchmark_utils/scripts]$ ./bench_all.sh
-[benchmark_utils/scripts/BFS]$ cat verify.csv && echo "------" && cat benchmark.csv
-[benchmark_utils/scripts/Coloring]$ cat verify.csv && echo "------" && cat benchmark.csv
-[benchmark_utils/scripts/KCore]$ cat verify.csv && echo "------" && cat benchmark.csv
-[benchmark_utils/scripts/BellmanFord]$ cat verify.csv && echo "------" && cat benchmark.csv
-[benchmark_utils/scripts/BellmanFord]$ cat verify.csv && echo "------" && cat benchmark.csv
 ```
 
 After running benchmarks, two `.csv` files will be generated.
@@ -71,3 +66,40 @@ Don't forget to cd into them and run `bash ./bench.sh`.
 ```
 
 To select a certain graph with a certain algorithm, please edit the first few lines of `bitwise_verify.sh`.
+
+## Usage
+
+Here is a breif overview of what is included in the interface.
+For more detailed infomation of usage, it will be more straitforward to read `include/toggle/detail/active.h` and `include/toggle/detail/frontier.h`.
+
+```cpp
+toggle::Frontier frontier(n) // empty by default
+toggle::Active active(n)     // full by default
+```
+
+| Return Value | Active | Frontier |
+| --- | --- | --- | 
+| bool | empty() | empty() | 
+| bool | contains() | contains(i) | 
+| void | insert() | insert(i) | 
+| void | remove() | remove(i) | 
+| bool | -- | empty_next() | 
+| bool | -- | contains_next(i) | 
+| void | -- | insert_next(i) | 
+| void | -- | remove_next(i) | 
+| bool | -- | advance_to_next() | 
+| void | for_each(F) | for_each(F) | 
+| T | reduce<T,identity>(F, combine) | reduce<T,identity>(F, combine) | 
+
+Frontier.for_each() by default removes all the elements after execution, while Active.reduce() keeps them.
+
+Below are some frequentedly used reduce functions, for convenience:
+
+| Return Value | Active | Frontier |
+| --- | --- | --- | 
+| uint64_t | reduce_vertex() | reduce_vertex() | 
+| uint64_t | reduce_edge(G) | reduce_edge(G) | 
+| T | reduce_max(sequence) | reduce_max(sequence) | 
+| T | reduce_min(sequence) | reduce_min(sequence) | 
+
+There is also `include/toggle/detail/internal/index_map.h`, it is wrapped in `internal::` to suggest that, if `IndexSet` has better performance than `IndexMap`, it is highly possible that the algorithm is not efficient, such as `WeightedBFS`, which does not include stepping or local search.
