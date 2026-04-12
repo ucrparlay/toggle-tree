@@ -11,9 +11,9 @@ import cairo
 
 ROOT = Path(__file__).resolve().parent
 INPUTS = {
-    "toggle": ROOT / "toggle" / "RoadUSA_sym.tsv",
-    "Hashbag": ROOT / "Hashbag" / "RoadUSA_sym.tsv",
-    "GBBS": ROOT / "GBBS" / "RoadUSA_sym.tsv",
+    "toggle": ROOT / "toggle" / "eu-2015-host_sym.tsv",
+    "Hashbag": ROOT / "Hashbag" / "eu-2015-host_sym.tsv",
+    "GBBS": ROOT / "GBBS" / "eu-2015-host_sym.tsv",
 }
 RUN_DIRS = {
     "toggle": ROOT / "toggle",
@@ -189,7 +189,7 @@ def main():
 
     for alg in ALGORITHMS:
         graph = datasets["toggle"][alg]["graph"]
-        base = max(alg_data[alg]["times"][1] for alg_data in datasets.idxalues())
+        base = max(alg_data[alg]["times"][1] for alg_data in datasets.values())
         series = {name: speedups(alg_data[alg]["times"], base) for name, alg_data in datasets.items()}
         out = ROOT / f"{alg}+{graph}1.png"
         draw_chart(out, graph, alg, series)
