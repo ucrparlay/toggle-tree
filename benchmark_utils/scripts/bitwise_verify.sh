@@ -22,7 +22,7 @@ else
   numactl -i all $TEST_GBBS -dump "../DumpedGBBS.txt" -s "$TEST_DIR$TEST_GRAPH.$TEST_TYPE"
 fi
 
-cd ../../benchmarks/$TEST_ALGO/ParSet
+cd ../../benchmarks/$TEST_ALGO/ToT
 numactl -i all ./test "$TEST_DIR$TEST_GRAPH.$TEST_TYPE" ../../../benchmark_utils/DumpedParSet.txt
 
 cd ../../../benchmark_utils

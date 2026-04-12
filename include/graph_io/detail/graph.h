@@ -185,41 +185,6 @@ struct Graph {
         for (size_t i = 0; i < m; i++) out << edges[i].idx << '\n';
         if constexpr (!std::is_same_v<T, Empty>) for (size_t i = 0; i < m; i++) out << edges[i].wgh << '\n';
     }
-
-    bool neighbors_sorted() const {
-        parlay::sequence<uint8_t> ok(n, 1);
-        parlay::parallel_for(0, n, [&](size_t u) {
-            for (uint64_t i = offsets[u] + 1; i < offsets[u + 1]; ++i) if (edges[i - 1].idx > edges[i].idx) { ok[u] = 0; return; }
-            for (uint64_t i = in_offsets[u] + 1; i < in_offsets[u + 1]; ++i) if (in_edges[i - 1].idx > in_edges[i].idx) { ok[u] = 0; return; }
-        });
-        return parlay::reduce(ok, parlay::logical_and<uint8_t>());
-    }
-
-    bool equal(const Graph &o) const {
-        if (n != o.n || m != o.m) return false;
-        if (symmetrized != o.symmetrized || weighted != o.weighted) return false;
-        if (load_time != o.load_time) return false;
-        if (name.size() != o.name.size()) return false;
-        if (offsets.size() != o.offsets.size() || edges.size() != o.edges.size()) return false;
-        if (in_offsets_seq.size() != o.in_offsets_seq.size() || in_edges_seq.size() != o.in_edges_seq.size()) return false;
-        if (std::memcmp(name.data(), o.name.data(), name.size())) return false;
-        auto cmp_bytes = [&](const void *a_, const void *b_, size_t bytes) -> bool {
-            if (!bytes) return true;
-            constexpr size_t B = 1 << 20;
-            size_t k = (bytes + B - 1) / B;
-            parlay::sequence<uint8_t> ok(k, 1);
-            parlay::parallel_for(0, k, [&](size_t i) {
-                size_t l = i * B, r = std::min(bytes, l + B);
-                ok[i] = !std::memcmp((const char*)a_ + l, (const char*)b_ + l, r - l);
-            });
-            return parlay::reduce(ok, parlay::logical_and<uint8_t>());
-        };
-        if (!cmp_bytes(offsets.data(), o.offsets.data(), offsets.size() * sizeof(uint64_t))) return false;
-        if (!cmp_bytes(edges.data(), o.edges.data(), edges.size() * sizeof(Edge<T>))) return false;
-        if (!cmp_bytes(in_offsets_seq.data(), o.in_offsets_seq.data(), in_offsets_seq.size() * sizeof(uint64_t))) return false;
-        if (!cmp_bytes(in_edges_seq.data(), o.in_edges_seq.data(), in_edges_seq.size() * sizeof(Edge<T>))) return false;
-        return true;
-    }
 };
 
 } // namespace GraphIO

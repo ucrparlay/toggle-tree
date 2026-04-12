@@ -7,9 +7,7 @@ export PARLAY_NUM_THREADS=$(nproc)
 NUM_ROUNDS=5
 BIN_DIR=/data/graphs/bin/
 ADJ_DIR=/data/graphs/pbbs/
-#TEST=../../include/GraphIO/example/FiveStarRedFlag_sym
-#TEST="${BIN_DIR}clueweb_sym"
-#TEST="${BIN_DIR}planet_sym"
+
 TEST="${BIN_DIR}twitter_sym"
 
 TYPES=(
