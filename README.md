@@ -6,11 +6,11 @@ Requires: Linux (x86_64), GCC >= 10.
 
 Supports graphs with up to 2³⁶ vertices and 2⁶⁴ edges.
 
-## Benchmarking
+## 1. Benchmarking
 
 Benchmarks in Toggle Tree are designed to produce bit-for-bit identical output with the GBBS/Hashbag baseline implementations.
 
-### Environment Setup
+### 1.1. Environment Setup
 
 No external dependencies are required for running ToT/Hashbag benchmarks.
 They only rely on parlaylib, and we have vendored it for benchmarking.
@@ -18,7 +18,7 @@ They only rely on parlaylib, and we have vendored it for benchmarking.
 Benchmarking GBBS baseline Requires bazel 7.7.1.
 Bazel is only used to build GBBS baselines, and has nothing to do with Toggle Tree.
 
-### Configuration
+### 1.2. onfiguration
 
 ```bash
 [benchmark_utils/scripts]$ cp example_of_config.sh config.sh
@@ -38,7 +38,7 @@ If you don't have `*_wghlog.bin` weighted graphs in your configured directory, y
 [benchmark_utils/generate_graph/generate_weight]$ bash ./bench.sh
 ```
 
-### Benchmarking
+### 1.3. Benchmarking
 
 Each folder in `benchmarks/` is a seperate implementation, 
 you can use `bash ./bench.sh` in them to run all the graphs, 
@@ -59,7 +59,7 @@ After running benchmarks, two `.csv` files will be generated.
 These scripts does not include implementations in `benchmarks/_supplementary`. There are figure-related code, and sota implementations of algorithms.
 Don't forget to cd into them and run `bash ./bench.sh`.
 
-### Bitwise Verification
+### 1.4. Bitwise Verification
 
 ```bash
 [benchmark_utils/scripts]$ ./bitwise_verify.sh
@@ -67,7 +67,7 @@ Don't forget to cd into them and run `bash ./bench.sh`.
 
 To select a certain graph with a certain algorithm, please edit the first few lines of `bitwise_verify.sh`.
 
-## Usage
+## 2. Usage
 
 Here is a breif overview of what is included in the interface.
 For more detailed infomation of usage, it will be more straitforward to read `include/toggle/detail/active.h` and `include/toggle/detail/frontier.h`.
