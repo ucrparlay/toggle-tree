@@ -27,6 +27,6 @@ int main(int argc, char** argv) {
     }
     ttt /= num_rounds;
 
-    graph_io::process_result(ttt, result, "..", G.name, "ToT2", dumppath); 
+    graph_io::process_result(ttt, result, "..", G.name, "ToT", dumppath); 
     return 0;
 }
