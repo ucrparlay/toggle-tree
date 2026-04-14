@@ -162,7 +162,7 @@ class KCore {
         buckets[k & bucket_mask].insert(u);
       } else {
         // deg[u] is reduced to k in previous rounds. Fatal error.
-        //printf("coreness[%u]: %u, was: %u, k: %u, alive_last_round: %u\n", u,
+        // printf("coreness[%u]: %u, was: %u, k: %u, alive_last_round: %u\n", u,
         //       coreness[u], was, k, alive_last_round);
         assert(coreness[u] >= k);
       }
@@ -186,7 +186,7 @@ class KCore {
         buckets[k & bucket_mask].insert(u);
       } else {
         // deg[u] is reduced to k in previous rounds. Fatal error.
-        //printf("coreness[%u]: %u, was: %u, k: %u, alive_last_round: %u\n", u,
+        // printf("coreness[%u]: %u, was: %u, k: %u, alive_last_round: %u\n", u,
         //       coreness[u], was, k, alive_last_round);
         assert(coreness[u] >= k);
       }
@@ -292,7 +292,7 @@ class KCore {
 
   sequence<NodeId> kcore() {
     size_t n = G.n;
-    size_t bucketing_pt = 16;
+    size_t bucketing_pt = 999999;
     auto remaining_vertices = parlay::sequence<NodeId>::uninitialized(n);
     size_t avg_deg = G.m / n;
     parallel_for(0, n, [&](size_t i) { remaining_vertices[i] = i; });
@@ -533,14 +533,14 @@ class KCore {
         t_pack.stop();
       }
     }
-    //printf("coreness: %u\n", max_core);
-    //t_insert.total();
-    //t_dump.total();
-    //t_push.total();
-    //t_pack.total();
-    //t_add.total();
-    //t_check_n_count.total();
-    //cout << "rho: " << num_rho << endl;
+    // printf("coreness: %u\n", max_core);
+    // t_insert.total();
+    // t_dump.total();
+    // t_push.total();
+    // t_pack.total();
+    // t_add.total();
+    // t_check_n_count.total();
+    // cout << "rho: " << num_rho << endl;
     return coreness;
   }
 };
