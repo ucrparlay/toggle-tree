@@ -31,7 +31,7 @@ class KCore {
   static constexpr uint32_t log2_single_buckets = 3;
   static constexpr uint32_t num_intermediate_buckets = 6;
   static constexpr uint32_t sample_threshold = 2000;
-  static constexpr size_t BLOCK_SIZE = 1024;
+  static constexpr size_t BLOCK_SIZE = 128;
   static constexpr double init_reduce_ratio = 0.1;
   static constexpr uint32_t log2_error_factor = 32;
   static constexpr uint32_t local_queue_size = 128;
@@ -292,7 +292,7 @@ class KCore {
 
   sequence<NodeId> kcore() {
     size_t n = G.n;
-    size_t bucketing_pt = 999999;
+    size_t bucketing_pt = 16;
     auto remaining_vertices = parlay::sequence<NodeId>::uninitialized(n);
     size_t avg_deg = G.m / n;
     parallel_for(0, n, [&](size_t i) { remaining_vertices[i] = i; });
