@@ -23,7 +23,7 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
   static constexpr uint32_t exp_hits =
       log2_error_factor / (init_reduce_ratio * init_reduce_ratio);
   static constexpr uint32_t min_threshold_sample_degree =
-      static_cast<uint32_t>(sample_threshold / init_reduce_ratio + 0.999999999);
+      static_cast<uint32_t>(sample_threshold / init_reduce_ratio);
   static constexpr uint32_t min_exp_sample_degree =
       static_cast<uint32_t>(exp_hits / (1 - init_reduce_ratio)) + 1;
   static constexpr uint32_t min_initial_sample_degree =
@@ -41,8 +41,10 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
   };
 
   auto run_plain_kcore = [&]() {
+    NodeId k = 0;
+    int32_t use_reduce = -2 * std::log2(n);
     while (!active.empty()) {
-      NodeId k = active.reduce_min(coreness);
+      k = use_reduce >= 0 ? active.reduce_min(coreness) : k + 1;
 
       active.for_each([&](NodeId u) {
         if (coreness[u] == k) {
@@ -50,19 +52,70 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
           frontier.insert_next(u);
         }
       });
+      if (use_reduce < 0 && frontier.empty_next()) {
+        use_reduce++;
+      }
 
       while (frontier.advance_to_next()) {
-        frontier.for_each([&](NodeId u) {
-          result[u] = k;
-          parlay::parallel_for(G.offsets[u], G.offsets[u + 1], [&](size_t i) {
-            NodeId v = G.edges[i].idx;
-            if (active.contains(v) &&
-                __atomic_fetch_sub(&coreness[v], 1, __ATOMIC_RELAXED) ==
-                    k + 1) {
-              active.remove(v);
-              frontier.insert_next(v);
+        constexpr size_t LOCAL_QUEUE = 128;
+        constexpr size_t STRIDE = 8;
+        auto local_search = [&](auto&& self, NodeId u,
+                                NodeId layer) -> void {
+          if (G.offsets[u + 1] - G.offsets[u] >= LOCAL_QUEUE) {
+            result[u] = k;
+            parlay::parallel_for(G.offsets[u], G.offsets[u + 1], [&](size_t i) {
+              NodeId v = G.edges[i].idx;
+              if (active.contains(v) &&
+                  __atomic_fetch_sub(&coreness[v], 1, __ATOMIC_RELAXED) ==
+                      k + 1) {
+                active.remove(v);
+                if (layer + 1 == STRIDE) {
+                  frontier.insert_next(v);
+                } else {
+                  self(self, v, layer + 1);
+                }
+              }
+            }, LOCAL_QUEUE);
+          } else {
+            NodeId local_queue[LOCAL_QUEUE];
+            local_queue[0] = u;
+            size_t lpos = 0;
+            size_t rpos = 1;
+            size_t cnt = 1;
+            while (lpos < rpos && cnt < LOCAL_QUEUE) {
+              NodeId current = local_queue[lpos];
+              result[current] = k;
+              if (G.offsets[current + 1] - G.offsets[current] + rpos >
+                  LOCAL_QUEUE) {
+                break;
+              }
+              lpos++;
+              for (size_t i = G.offsets[current]; i < G.offsets[current + 1];
+                   i++) {
+                cnt++;
+                NodeId v = G.edges[i].idx;
+                if (active.contains(v) &&
+                    __atomic_fetch_sub(&coreness[v], 1, __ATOMIC_RELAXED) ==
+                        k + 1) {
+                  active.remove(v);
+                  local_queue[rpos] = v;
+                  rpos++;
+                }
+              }
             }
-          }, 256);
+
+            parlay::parallel_for(lpos, rpos, [&](size_t i) {
+              if (layer + 1 == STRIDE) {
+                frontier.insert_next(local_queue[i]);
+              } else {
+                self(self, local_queue[i], layer + 1);
+              }
+            }, 1);
+          }
+        };
+
+        frontier.for_each([&](NodeId u) {
+          local_search(local_search, u, 0);
         });
       }
     }
