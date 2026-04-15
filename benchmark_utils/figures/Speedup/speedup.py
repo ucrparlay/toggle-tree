@@ -194,7 +194,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output-format",
         choices=["pdf", "png"],
-        default="png",
+        default="pdf",
         help="Output figure format.",
     )
     return parser.parse_args()
