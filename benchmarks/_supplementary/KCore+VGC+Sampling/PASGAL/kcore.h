@@ -27,7 +27,7 @@ class KCore {
 
   // tunable parameters
   static constexpr bool enable_sampling = true;
-  static constexpr bool enable_local_queue = true;
+  static constexpr bool enable_local_queue = false;
   static constexpr uint32_t log2_single_buckets = 3;
   static constexpr uint32_t num_intermediate_buckets = 6;
   static constexpr uint32_t sample_threshold = 2000;
