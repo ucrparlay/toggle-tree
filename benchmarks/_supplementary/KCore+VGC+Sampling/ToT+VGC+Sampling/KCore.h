@@ -39,11 +39,14 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
     if (deg * init_reduce_ratio >= sample_threshold &&
         k < deg * init_reduce_ratio * bias_factor &&
         exp_hits < (deg - k) * (1 - init_reduce_ratio)) {
+      if (!sample_mode[v]) {
+        sampling_set.insert(v);
+      }
       sample_mode[v] = true;
-      sampling_set.insert(v);
       int n_star = static_cast<int>(deg - k);
-      size_t modified_exp_hits = log2_error_factor * parlay::log2_up(n_star) *
-                                 parlay::log2_up(n_star) / 2;
+      uint32_t log_n_star = parlay::log2_up(n_star);
+      size_t modified_exp_hits =
+          log2_error_factor * log_n_star * log_n_star / 2;
       double sample_rate = static_cast<double>(modified_exp_hits) /
                            ((1 - init_reduce_ratio) * deg);
       samplers[v].reset(modified_exp_hits, sample_rate);
@@ -94,6 +97,7 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
 
     count_alive_neighbors(u);
 
+    bool still_active = true;
     if (coreness[u] < k) {
       NodeId alive_last_round = parlay::count_if(
           G.edges.cut(G.offsets[u], G.offsets[u + 1]), [&](auto& es) {
@@ -108,12 +112,13 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
         }
         sample_mode[u] = false;
         frontier.insert_next(u);
+        still_active = false;
       } else {
         assert(coreness[u] >= k);
       }
     }
 
-    if (active.contains(u)) {
+    if (still_active) {
       set_sampler(u, k);
     }
   };
@@ -127,25 +132,35 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
     }
   };
 
-  auto map_neighbors = [&](NodeId u, NodeId k) {
-    parlay::parallel_for(G.offsets[u], G.offsets[u + 1], [&](size_t i) {
-      NodeId v = G.edges[i].idx;
-      if (!active.contains(v)) {
-        return;
-      }
-
-      if (enable_sampling && sample_mode[v]) {
-        sample_vertex(u, v);
-      } else {
-        if (__atomic_fetch_sub(&coreness[v], 1, __ATOMIC_RELAXED) == k + 1) {
+  auto map_neighbors = [&](NodeId u, NodeId k, bool has_sampling) {
+    if (!has_sampling) {
+      parlay::parallel_for(G.offsets[u], G.offsets[u + 1], [&](size_t i) {
+        NodeId v = G.edges[i].idx;
+        if (active.contains(v) &&
+            __atomic_fetch_sub(&coreness[v], 1, __ATOMIC_RELAXED) == k + 1) {
           active.remove(v);
           frontier.insert_next(v);
         }
-      }
-    }, 256);
+      }, 256);
+    } else {
+      parlay::parallel_for(G.offsets[u], G.offsets[u + 1], [&](size_t i) {
+        NodeId v = G.edges[i].idx;
+        if (!active.contains(v)) {
+          return;
+        }
+
+        if (enable_sampling && sample_mode[v]) {
+          sample_vertex(u, v);
+        } else {
+          if (__atomic_fetch_sub(&coreness[v], 1, __ATOMIC_RELAXED) == k + 1) {
+            active.remove(v);
+            frontier.insert_next(v);
+          }
+        }
+      }, 256);
+    }
   };
 
-  std::atomic<bool> contains_sampling_nodes(false);
   parlay::parallel_for(0, n, [&](size_t i) {
     coreness[i] = G.offsets[i + 1] - G.offsets[i];
     sample_mode[i] = false;
@@ -154,13 +169,9 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
     }
     if (enable_sampling &&
         coreness[i] * init_reduce_ratio >= sample_threshold) {
-      contains_sampling_nodes.store(true, std::memory_order_relaxed);
+      set_sampler(i, 0);
     }
   });
-
-  if (contains_sampling_nodes.load(std::memory_order_relaxed)) {
-    parlay::parallel_for(0, n, [&](size_t i) { set_sampler(i, 0); });
-  }
 
   while (!active.empty()) {
     NodeId k = active.reduce_min(coreness);
@@ -193,13 +204,10 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
     });
 
     while (frontier.advance_to_next()) {
+      bool has_sampling = !sampling_set.empty();
       frontier.for_each([&](NodeId u) {
-        if (sample_mode[u]) {
-          sampling_set.remove(u);
-        }
-        sample_mode[u] = false;
         result[u] = k;
-        map_neighbors(u, k);
+        map_neighbors(u, k, has_sampling);
       });
 
       if (!counting_set.empty()) {

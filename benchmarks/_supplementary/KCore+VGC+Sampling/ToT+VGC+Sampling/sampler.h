@@ -18,26 +18,28 @@ class Sampler {
   Sampler(const size_t _exp_hits, double _sample_rate)
       : exp_hits(_exp_hits),
         threshold(_sample_rate * std::numeric_limits<hash_t>::max()) {
-    num_hits = 0;
+    num_hits.store(0, std::memory_order_relaxed);
   }
 
   Sampler(const Sampler &other)
       : exp_hits(other.exp_hits), threshold(other.threshold) {
-    num_hits = other.num_hits.load();
+    num_hits.store(other.num_hits.load(std::memory_order_relaxed),
+                   std::memory_order_relaxed);
   }
 
   Sampler(Sampler &&other)
       : exp_hits(other.exp_hits), threshold(other.threshold) {
-    num_hits = other.num_hits.load();
+    num_hits.store(other.num_hits.load(std::memory_order_relaxed),
+                   std::memory_order_relaxed);
   }
 
   bool sample(hash_t random_number, bool &callback) {
     callback = false;
-    if (num_hits >= exp_hits) {
+    if (num_hits.load(std::memory_order_relaxed) >= exp_hits) {
       return false;
     }
     if (random_number < threshold) {
-      uint32_t ret = num_hits.fetch_add(1);
+      uint32_t ret = num_hits.fetch_add(1, std::memory_order_relaxed);
       if (ret >= exp_hits) {
         return false;
       } else if (ret + 1 == exp_hits) {
@@ -47,9 +49,11 @@ class Sampler {
     return true;
   }
 
-  void reset() { num_hits = 0; }
+  void reset() { num_hits.store(0, std::memory_order_relaxed); }
 
-  uint32_t get_num_hits() const { return num_hits; }
+  uint32_t get_num_hits() const {
+    return num_hits.load(std::memory_order_relaxed);
+  }
 
   uint32_t get_exp_hits() const { return exp_hits; }
 
@@ -60,7 +64,7 @@ class Sampler {
   void reset(const size_t _exp_hits, double _sample_rate) {
     exp_hits = _exp_hits;
     threshold = _sample_rate * std::numeric_limits<hash_t>::max();
-    num_hits = 0;
+    num_hits.store(0, std::memory_order_relaxed);
   }
 };
 
