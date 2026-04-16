@@ -62,46 +62,6 @@ struct IndexMap {
         if (!tree[0][0].dirty) return tree[0][0].augval;
         return repair(0, 0);
     }
-    /*
-    template<class F>
-    inline T extract_min(int32_t layer, uint64_t base, T threshold, F&& f){
-        uint64_t mask = tree[layer][idx(layer, base)].bitmap;
-        uint64_t newmask = 0;
-        T best = std::numeric_limits<T>::max();
-        if (layer == 5) {
-            for (int32_t i = 0; i < __builtin_popcountll(mask); i++) {
-                uint64_t v = base + fnd(i, mask);
-                if (sequence[v] <= threshold) { f(v); }
-                else { best = std::min(best, sequence[v]); newmask |= 1ULL << (v & 63); }
-            }
-        }
-        else {
-            T bests[__builtin_popcountll(mask)]; int32_t bests_size = 0;
-            uint64_t bases[__builtin_popcountll(mask)];
-            for (int32_t i=0; i < __builtin_popcountll(mask); i++) {
-                uint64_t childbase = base + (fnd(i, mask) << off(layer + 1));
-                T childaugval = tree[layer + 1][idx(layer + 1, childbase)].augval;
-                if (childaugval <= threshold) { bases[bests_size] = childbase; bests_size++; }
-                else { best = std::min(best, childaugval); newmask |= 1ULL << fnd(i, mask); }
-            }
-            parlay::parallel_for(0, bests_size, [&](int32_t i) {
-                bests[i] = extract_min(layer + 1, bases[i], threshold, f);
-            }, 1);
-            for (int32_t i = 0; i < bests_size; i++) {
-                best = std::min(best, bests[i]);
-                if (tree[layer + 1][idx(layer + 1, bases[i])].bitmap) {
-                    newmask |= 1ULL << ((bases[i] >> off(layer + 1)) & 63);
-                }
-            }
-        }
-        tree[layer][idx(layer, base)].bitmap = newmask;
-        return tree[layer][idx(layer, base)].augval = best;
-    }
-    template<class F>
-    inline T extract_min(T threshold, F&& f) {
-        if (!tree[0][0].bitmap) return std::numeric_limits<T>::max();
-        return extract_min(0, 0, threshold, f);
-    }*/
     
     template<class F>
     inline uint64_t extract_min(int32_t layer, uint64_t base, T threshold, F&& f){
