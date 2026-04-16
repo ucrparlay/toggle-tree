@@ -101,7 +101,7 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
                 ); });
             }
             else {
-                
+                /*
                 frontier.for_each([&](uint32_t u) {
                     result[u] = k;
                     parlay::parallel_for(G.offsets[u], G.offsets[u + 1], [&](size_t i) {
@@ -119,8 +119,8 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
                             }
                         }
                     }, 256);
-                });
-                /*frontier.for_each([&](uint32_t s) { local_search(local_search, s, 0, 
+                });*/
+                frontier.for_each([&](uint32_t s) { local_search(local_search, s, 0, 
                     [&] (uint32_t s) { result[s] = k; },
                     [&] (uint32_t d) { return active.contains(d); },
                     [&] (uint32_t s, uint32_t d) { 
@@ -131,7 +131,7 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
                         return __atomic_fetch_sub(&coreness[d], 1, __ATOMIC_RELAXED) == k + 1; 
                     },
                     [&] (uint32_t d) { active.remove(d); }
-                ); });*/
+                ); });
             }
             counting_set.for_each<true>([&](uint32_t u) {
                 coreness[u] = parlay::count_if(G.edges.cut(G.offsets[u], G.offsets[u + 1]), [&](auto& es) { 

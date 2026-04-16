@@ -6,7 +6,7 @@
 #include <cmath>
 #include <limits>
 
-static constexpr uint32_t sample_threshold = 2000;
+static constexpr uint32_t sample_threshold = 20000;
 static constexpr double init_reduce_ratio = 0.1;
 static constexpr uint32_t log2_error_factor = 32;
 static constexpr double bias_factor = 0.5;
