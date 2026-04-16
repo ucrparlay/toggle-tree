@@ -1,4 +1,4 @@
-source ../../../../benchmark_utils/scripts/config.sh
+source ../../../benchmark_utils/scripts/config.sh
 make clean
 make
 for type in "${TYPES[@]}"; do
