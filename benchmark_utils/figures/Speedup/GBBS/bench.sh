@@ -9,7 +9,6 @@ THREADS=(1 2 4 12 24 48 96 192)
 PLOT=(
     com-orkut_sym
     soc-LiveJournal1_sym
-    uk-2002_sym
     eu-2015-host_sym
     africa_sym
     RoadUSA_sym

@@ -11,7 +11,7 @@
 
 #include "../../../../benchmarks/BFS/ToT+VGC/BFS.h"
 #include "../../../../benchmarks/Coloring/ToT/Coloring.h"
-#include "../../../../benchmarks/KCore/ToT+VGC/KCore.h"
+#include "../../../../benchmarks/KCore/ToT+VGC+SPL/KCore.h"
 
 namespace {
 
@@ -130,9 +130,9 @@ int main(int argc, char** argv) {
         return run_rounds(G, num_rounds, [](auto& graph) { return KCore(graph); });
     });
 
-    //run_speedup(G.name, "Coloring", "coloring.txt", counts, [&] {
-    //    return run_rounds(G, num_rounds, [](auto& graph) { return Coloring(graph); });
-    //});
+    run_speedup(G.name, "Coloring", "coloring.txt", counts, [&] {
+        return run_rounds(G, num_rounds, [](auto& graph) { return Coloring(graph); });
+    });
 
     return 0;
 }

@@ -1,7 +1,7 @@
 import argparse
 import os
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 os.environ.setdefault("MPLCONFIGDIR", str(SCRIPT_DIR / ".matplotlib"))
@@ -10,12 +10,17 @@ import matplotlib.pyplot as plt
 
 
 CORES = [1, 2, 4, 12, 24, 48, 96, 192]
-SINGLE_MARKERS = ["o", "s", "v", "^", "d", "*"]
 TASKS = ["kcore", "bfs", "coloring"]
 SYSTEM_TASKS = {
     "ToT": ["kcore", "bfs", "coloring"],
     "GBBS": ["kcore", "bfs", "coloring"],
     "PASGAL": ["kcore", "bfs"],
+}
+SYSTEM_RENDER_ORDER = ["GBBS", "PASGAL", "ToT"]
+SYSTEM_STYLES = {
+    "ToT": {"marker": "o", "color": "#d62728"},
+    "GBBS": {"marker": "s", "color": "#1f77b4"},
+    "PASGAL": {"marker": "^", "color": "#2ca02c"},
 }
 GRAPH_LABELS = {
     "friendster_sym": "FS",
@@ -49,6 +54,7 @@ GRAPH_LABELS = {
 def display_graph_name(graph: str) -> str:
     return GRAPH_LABELS.get(graph, graph)
 
+
 def read_scale_file(file_path: Path) -> Dict[str, List[float]]:
     data: Dict[str, List[float]] = {}
 
@@ -65,114 +71,101 @@ def read_scale_file(file_path: Path) -> Dict[str, List[float]]:
     return data
 
 
-def draw_scale_three(all_data: Dict[str, Dict[str, List[float]]], output_path: Path) -> None:
-    fig, axes = plt.subplots(1, 3, sharex=True, figsize=(12, 2.5))
-
-    legend_handles = []
-    legend_labels = []
-
-    for ax, task in zip(axes, TASKS):
-        data = all_data[task]
-        for i, (graph, values) in enumerate(data.items()):
-            (line,) = ax.plot(
-                CORES,
-                values,
-                label=display_graph_name(graph),
-                marker=SINGLE_MARKERS[i % len(SINGLE_MARKERS)],
-            )
-            if task == TASKS[0]:
-                legend_handles.append(line)
-                legend_labels.append(display_graph_name(graph))
-
-        ax.set_title(task, fontsize=20, fontstyle="italic")
-        ax.set_xscale("log", base=2)
-        ax.set_yscale("log", base=2)
-        ax.set_xticks([1, 2, 4, 12, 48, 96, 192])
-        ax.set_xticklabels([1, 2, 4, 12, 48, 96, "96h"], fontsize=16, rotation=60)
-        ax.set_yticks([1, 2, 4, 8, 16, 32, 64, 128])
-        ax.set_yticklabels(["1", "2", "4", "8", "16", "32", "64", "128"], fontsize=17)
-
-    fig.legend(
-        legend_handles,
-        legend_labels,
-        loc="upper center",
-        bbox_to_anchor=(0.5, 1.2),
-        ncol=len(legend_labels),
-        fontsize=17,
-        frameon=False,
-        handletextpad=0.1,
-        columnspacing=0.7,
-        borderpad=0.4,
-    )
-
-    fig.text(0.5, -0.18, "Number of Cores", ha="center", fontsize=20)
-    fig.text(0.02, 0.5, "Self Speedup", va="center", rotation="vertical", fontsize=20)
-    fig.savefig(output_path, bbox_inches="tight")
-    plt.close(fig)
+def collect_all_data(base_dir: Path) -> Dict[str, Dict[str, Dict[str, List[float]]]]:
+    all_data: Dict[str, Dict[str, Dict[str, List[float]]]] = {}
+    for system, tasks in SYSTEM_TASKS.items():
+        data_dir = base_dir / system
+        system_data: Dict[str, Dict[str, List[float]]] = {}
+        for task in tasks:
+            system_data[task] = read_scale_file(data_dir / f"{task}.txt")
+        all_data[system] = system_data
+    return all_data
 
 
-def draw_scale_two(
-    data1: Dict[str, List[float]],
-    data2: Dict[str, List[float]],
-    title1: str,
-    title2: str,
+def get_graph_order(all_data: Dict[str, Dict[str, Dict[str, List[float]]]]) -> List[str]:
+    for system in SYSTEM_TASKS:
+        for task in TASKS:
+            task_data = all_data.get(system, {}).get(task)
+            if task_data:
+                return list(task_data.keys())
+    return []
+
+
+def lookup_values(
+    all_data: Dict[str, Dict[str, Dict[str, List[float]]]],
+    system: str,
+    task: str,
+    graph: str,
+) -> Optional[List[float]]:
+    return all_data.get(system, {}).get(task, {}).get(graph)
+
+
+def draw_speedup_grid(
+    all_data: Dict[str, Dict[str, Dict[str, List[float]]]],
     output_path: Path,
 ) -> None:
-    fig, (ax1, ax2) = plt.subplots(1, 2, sharex=True, figsize=(8, 2.5))
+    graphs = get_graph_order(all_data)[:5]
+    num_rows = len(TASKS)
+    num_cols = len(graphs)
+    fig, axes = plt.subplots(num_rows, num_cols, sharex=True, sharey=True, figsize=(11.5, 7.2))
 
-    for i, (graph, values) in enumerate(data1.items()):
-        ax1.plot(
-            CORES,
-            values,
-            label=display_graph_name(graph),
-            marker=SINGLE_MARKERS[i % len(SINGLE_MARKERS)],
-            markersize=8,
-        )
+    legend_handles = {}
+    x_ticks = [1, 2, 4, 12, 48, 192]
+    y_ticks = [1, 2, 4, 8, 16, 32, 64, 128]
 
-    for i, (graph, values) in enumerate(data2.items()):
-        ax2.plot(
-            CORES,
-            values,
-            label=display_graph_name(graph),
-            marker=SINGLE_MARKERS[(i + 4) % len(SINGLE_MARKERS)],
-            markersize=8,
-        )
+    for row_idx, task in enumerate(TASKS):
+        for col_idx, graph in enumerate(graphs):
+            ax = axes[row_idx][col_idx]
+            for system in SYSTEM_RENDER_ORDER:
+                values = lookup_values(all_data, system, task, graph)
+                if values is None:
+                    continue
 
-    ax1.set_xscale("log", base=2)
-    ax1.set_yscale("log", base=2)
-    ax2.set_xscale("log", base=2)
-    ax2.set_yscale("log", base=2)
+                style = SYSTEM_STYLES[system]
+                (line,) = ax.plot(
+                    CORES,
+                    values,
+                    label=system,
+                    marker=style["marker"],
+                    color=style["color"],
+                    linewidth=1.8,
+                    markersize=5,
+                )
+                legend_handles.setdefault(system, line)
 
-    ax1.set_xticks([1, 2, 4, 12, 48, 192])
-    ax1.set_xticklabels([1, 2, 4, 12, 48, "96h"], fontsize=16, rotation=0)
-    ax1.set_yticks([1, 2, 4, 8, 16, 32, 64, 128])
-    ax1.set_yticklabels(["1", "2", "4", "8", "16", "32", "64", "128"], fontsize=17)
+            ax.set_xscale("log", base=2)
+            ax.set_yscale("log", base=2)
+            ax.set_xticks(x_ticks)
+            ax.set_yticks(y_ticks)
+            ax.grid(True, which="both", linestyle="--", linewidth=0.5, alpha=0.35)
 
-    ax2.set_xticks([1, 2, 4, 12, 48, 192])
-    ax2.set_xticklabels([1, 2, 4, 12, 48, "96h"], fontsize=16, rotation=0)
-    ax2.set_yticks([1, 2, 4, 8, 16, 32, 64, 128])
-    ax2.set_yticklabels(["1", "2", "4", "8", "16", "32", "64", "128"], fontsize=17)
+            if row_idx == 0:
+                ax.set_title(display_graph_name(graph), fontsize=16)
+            if col_idx == 0:
+                ax.set_ylabel(task, fontsize=13, fontstyle="italic")
+            if row_idx == num_rows - 1:
+                ax.set_xticklabels([1, 2, 4, 12, 48, "96h"], fontsize=11, rotation=0)
+            else:
+                ax.tick_params(labelbottom=False)
 
-    handles, labels = ax1.get_legend_handles_labels()
-
-    ax1.set_title(title1, fontsize=20, fontstyle="italic")
-    ax2.set_title(title2, fontsize=20, fontstyle="italic")
+            if col_idx == 0:
+                ax.set_yticklabels(["1", "2", "4", "8", "16", "32", "64", "128"], fontsize=11)
+            else:
+                ax.tick_params(labelleft=False)
 
     fig.legend(
-        handles,
-        labels,
-        loc="upper center",
-        bbox_to_anchor=(0.5, 1.2),
-        ncol=6,
-        fontsize=17,
+        [legend_handles[system] for system in SYSTEM_RENDER_ORDER if system in legend_handles],
+        [system for system in SYSTEM_RENDER_ORDER if system in legend_handles],
+        loc="upper right",
+        bbox_to_anchor=(0.985, 0.13),
+        ncol=3,
+        fontsize=13,
         frameon=False,
-        handletextpad=0.1,
-        columnspacing=0.7,
-        borderpad=0.4,
+        handletextpad=0.4,
+        columnspacing=1.0,
     )
 
-    fig.text(0.5, -0.12, "Number of cores", ha="center", fontsize=20)
-    fig.text(0.02, 0.5, "Self speedup", va="center", rotation="vertical", fontsize=20)
+    fig.tight_layout(rect=(0.04, 0.11, 1.0, 0.95))
     fig.savefig(output_path, bbox_inches="tight")
     plt.close(fig)
 
@@ -206,19 +199,10 @@ def main() -> None:
     output_dir = args.output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    for system, tasks in SYSTEM_TASKS.items():
-        data_dir = base_dir / system
-        all_data = {}
-        for task in tasks:
-            input_path = data_dir / f"{task}.txt"
-            all_data[task] = read_scale_file(input_path)
-
-        output_path = output_dir / f"{system.lower()}_speedup.{args.output_format}"
-        if len(tasks) == 3:
-            draw_scale_three(all_data, output_path)
-        else:
-            draw_scale_two(all_data[tasks[0]], all_data[tasks[1]], tasks[0], tasks[1], output_path)
-        print(f"Wrote {output_path}")
+    all_data = collect_all_data(base_dir)
+    output_path = output_dir / f"speedup.{args.output_format}"
+    draw_speedup_grid(all_data, output_path)
+    print(f"Wrote {output_path}")
 
 
 if __name__ == "__main__":

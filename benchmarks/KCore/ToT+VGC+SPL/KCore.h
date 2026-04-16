@@ -1,7 +1,57 @@
 #pragma once
 
 #include <toggle/toggle.h>
-#include "sampler.h"
+
+static constexpr uint32_t sample_threshold = 20000;
+static constexpr double init_reduce_ratio = 0.1;
+static constexpr uint32_t log2_error_factor = 32;
+static constexpr double bias_factor = 0.5;
+static constexpr double error_rate_tolerance = 0.0000000001;
+static constexpr double log_error_rate_tolerance = std::log(error_rate_tolerance);
+static constexpr uint32_t min_initial_sample_degree = std::max(
+    static_cast<uint32_t>(log2_error_factor / (init_reduce_ratio * init_reduce_ratio) / (1 - init_reduce_ratio)) + 1, 
+    static_cast<uint32_t>(sample_threshold / init_reduce_ratio)
+);
+
+struct Sampler {
+    uint32_t num_hits;
+    uint32_t exp_hits;
+    uint32_t threshold;
+
+    Sampler(const size_t _exp_hits, double _sample_rate): exp_hits(_exp_hits), threshold(_sample_rate * UINT32_MAX), num_hits(0){}
+
+    bool sample() {
+        static thread_local uint32_t x=0x9e3779b9u;
+        x = x*4294967291u + 374761393u;
+        if (num_hits >= exp_hits || x >= threshold) { return false; }
+        return __atomic_fetch_add(&num_hits, 1, __ATOMIC_RELAXED) + 1 == exp_hits;
+    }
+
+    void reset(uint32_t k, uint32_t deg) {
+        int n_star = static_cast<int>(deg - k);
+        uint32_t log_n_star = parlay::log2_up(n_star);
+        size_t modified_exp_hits = log2_error_factor * log_n_star * log_n_star / 2;
+        double sample_rate = static_cast<double>(modified_exp_hits) / ((1 - init_reduce_ratio) * deg);
+        exp_hits = modified_exp_hits;
+        threshold = sample_rate * UINT32_MAX;
+        num_hits = 0;
+    }
+
+    bool unsafe(uint32_t k, uint32_t deg) {
+        if (deg * init_reduce_ratio * bias_factor < k) { return true; }
+        double n_star = static_cast<double>(deg - k);
+        size_t num_hits = std::max<uint32_t>(1, num_hits);
+        double sample_rate = static_cast<double>(exp_hits) / ((1 - init_reduce_ratio) * deg);
+        double mu = n_star * sample_rate;
+        double h = static_cast<double>(num_hits);
+        return -mu + 2 * h - h * h / mu >= log_error_rate_tolerance;
+    }
+
+    bool require_sampling(uint32_t k, uint32_t deg) {
+        return deg * init_reduce_ratio >= sample_threshold && k < deg * init_reduce_ratio * bias_factor && exp_hits < (deg - k) * (1 - init_reduce_ratio);
+    }
+};
+
 
 template <class Graph>
 parlay::sequence<uint32_t> KCore(Graph& G) {
@@ -28,22 +78,22 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
     while (!active.empty()) {
         k = use_reduce>=0 ? active.reduce_min(coreness) : k+1;
 
-        sample_mode.for_each([&](uint32_t u) {
-            if (samplers[u].unsafe(k, coreness[u])) {
-                coreness[u] = parlay::count_if(G.edges.cut(G.offsets[u], G.offsets[u + 1]), [&](auto& es) { 
+        sample_mode.for_each([&](uint32_t s) {
+            if (samplers[s].unsafe(k, coreness[s])) {
+                coreness[s] = parlay::count_if(G.edges.cut(G.offsets[s], G.offsets[s + 1]), [&](auto& es) { 
                     return active.contains(es.idx) || frontier.contains_next(es.idx); 
                 });
-                if (coreness[u] < k) { coreness[u] = k; active.remove(u); sample_mode.remove(u); frontier.insert_next(u); }
-                if (samplers[u].require_sampling(k, coreness[u])) { samplers[u].reset(k, coreness[u]); } 
-                else { sample_mode.remove(u);}
+                if (coreness[s] < k) { coreness[s] = k; active.remove(s); sample_mode.remove(s); frontier.insert_next(s); }
+                if (samplers[s].require_sampling(k, coreness[s])) { samplers[s].reset(k, coreness[s]); } 
+                else { sample_mode.remove(s);}
             }
         });
 
-        active.for_each([&](uint32_t u) {
-            if (coreness[u] == k) {
-                if (sample_mode.contains(u)) { sample_mode.remove(u); }
-                frontier.insert_next(u);
-                active.remove(u);
+        active.for_each([&](uint32_t s) {
+            if (coreness[s] == k) {
+                if (sample_mode.contains(s)) { sample_mode.remove(s); }
+                frontier.insert_next(s);
+                active.remove(s);
             }
         });
 
@@ -59,7 +109,7 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
                     parlay::parallel_for(G.offsets[s], G.offsets[s+1], [&](size_t i) { 
                         uint32_t d = G.edges[i].idx;
                         if (f_cond_r(d)) {
-                            if (f_cond_w(s, d)) {
+                            if (f_cond_w(d)) {
                                 f_dest(d);
                                 if (layer+1==STRIDE) frontier.insert_next(d);
                                 else self(self, d, layer+1, f_source, f_cond_r, f_cond_w, f_dest);
@@ -79,7 +129,7 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
                         for (size_t i=G.offsets[cur_index]; i<G.offsets[cur_index+1]; i++) {
                             cnt++; uint32_t d = G.edges[i].idx;
                             if (f_cond_r(d)) {
-                                if (f_cond_w(cur_index, d)) {
+                                if (f_cond_w(d)) {
                                     f_dest(d);
                                     local_queue[rpos] = d; rpos++;
                                 }
@@ -96,36 +146,17 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
                 frontier.for_each([&](uint32_t s) { local_search(local_search, s, 0, 
                     [&] (uint32_t s) { result[s] = k; },
                     [&] (uint32_t d) { return active.contains(d); },
-                    [&] (uint32_t s, uint32_t d) { return __atomic_fetch_sub(&coreness[d], 1, __ATOMIC_RELAXED) == k + 1; },
+                    [&] (uint32_t d) { return __atomic_fetch_sub(&coreness[d], 1, __ATOMIC_RELAXED) == k + 1; },
                     [&] (uint32_t d) { active.remove(d); }
                 ); });
             }
             else {
-                /*
-                frontier.for_each([&](uint32_t u) {
-                    result[u] = k;
-                    parlay::parallel_for(G.offsets[u], G.offsets[u + 1], [&](size_t i) {
-                        uint32_t v = G.edges[i].idx;
-                        if (!active.contains(v)) { return; }
-                        if (sample_mode.contains(v)) { 
-                            if (samplers[v].sample(parlay::hash32(u * G.n + v))) {
-                                counting_set.insert(v);
-                            }
-                        } 
-                        else {
-                            if (__atomic_fetch_sub(&coreness[v], 1, __ATOMIC_RELAXED) == k + 1) {
-                                active.remove(v);
-                                frontier.insert_next(v);
-                            }
-                        }
-                    }, 256);
-                });*/
                 frontier.for_each([&](uint32_t s) { local_search(local_search, s, 0, 
                     [&] (uint32_t s) { result[s] = k; },
                     [&] (uint32_t d) { return active.contains(d); },
-                    [&] (uint32_t s, uint32_t d) { 
+                    [&] (uint32_t d) { 
                         if (sample_mode.contains(d)) {
-                            if (samplers[d].sample(parlay::hash32(s * G.n + d))) { counting_set.insert(d); }
+                            if (samplers[d].sample()) { counting_set.insert(d); }
                             return false;
                         }
                         return __atomic_fetch_sub(&coreness[d], 1, __ATOMIC_RELAXED) == k + 1; 
@@ -133,15 +164,17 @@ parlay::sequence<uint32_t> KCore(Graph& G) {
                     [&] (uint32_t d) { active.remove(d); }
                 ); });
             }
-            counting_set.for_each<true>([&](uint32_t u) {
-                coreness[u] = parlay::count_if(G.edges.cut(G.offsets[u], G.offsets[u + 1]), [&](auto& es) { 
+            counting_set.for_each<true>([&](uint32_t s) {
+                coreness[s] = parlay::count_if(G.edges.cut(G.offsets[s], G.offsets[s + 1]), [&](auto& es) { 
                     return active.contains(es.idx) || frontier.contains_next(es.idx); 
                 });
-                if (coreness[u] < k) { coreness[u] = k; active.remove(u); sample_mode.remove(u); frontier.insert_next(u); }
-                if (samplers[u].require_sampling(k, coreness[u])) { samplers[u].reset(k, coreness[u]); } 
-                else { sample_mode.remove(u);}
+                if (coreness[s] < k) { coreness[s] = k; active.remove(s); sample_mode.remove(s); frontier.insert_next(s); }
+                if (samplers[s].require_sampling(k, coreness[s])) { samplers[s].reset(k, coreness[s]); } 
+                else { sample_mode.remove(s);}
             });
         }
     }
     return result;
 }
+
+

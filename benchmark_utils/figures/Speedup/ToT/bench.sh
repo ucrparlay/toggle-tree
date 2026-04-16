@@ -7,7 +7,6 @@ source ../../../../benchmark_utils/scripts/config.sh
 PLOT=(
     com-orkut_sym
     soc-LiveJournal1_sym
-    uk-2002_sym
     eu-2015-host_sym
     africa_sym
     RoadUSA_sym
