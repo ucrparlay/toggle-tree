@@ -5,3 +5,5 @@ test
 *.png
 *.txt
 *.pdf
+*.tex
+!table.csv
