@@ -11,7 +11,13 @@ from matplotlib.ticker import LogLocator
 
 
 ROOT = Path(__file__).resolve().parent
-OUTPUT = ROOT / "round.pdf"
+OUT_DIR = ROOT / "round"
+OUTPUT = OUT_DIR / "round.pdf"
+CAPTION = (
+    "Per-round time comparison of Parallel Hash Bag and Toggle Tree. "
+    "Each point represents one round, with the x-axis showing the frontier size "
+    "and the y-axis showing the time. Lines show log-log linear regression fits."
+)
 X_MAX = 1e6
 Y_MAX = 1e-2
 FIT_BINS = 16
@@ -135,6 +141,7 @@ def draw_one(
 
 
 def main() -> None:
+    OUT_DIR.mkdir(exist_ok=True)
     fig, axes = plt.subplots(2, 3, figsize=(14, 8))
     axes = axes.ravel()
     panels_data = [load_pair(hashbag_csv, tot_csv) for _, hashbag_csv, tot_csv in PANELS]
@@ -159,6 +166,13 @@ def main() -> None:
     )
     fig.subplots_adjust(hspace=0.28, wspace=0.22, bottom=0.13)
     fig.savefig(OUTPUT, bbox_inches="tight")
+    (OUT_DIR / "round.tex").write_text(
+        "\\begin{center}\n"
+        "\\includegraphics[width=\\textwidth]{experiments/round/round.pdf}\n"
+        f"\\captionof{{figure}}{{{CAPTION}}}\n"
+        "\\label{fig:round}\n"
+        "\\end{center}\n"
+    )
     print(f"wrote {OUTPUT}")
 
 

@@ -5,6 +5,14 @@ from typing import Dict, List, Optional
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 os.environ.setdefault("MPLCONFIGDIR", str(SCRIPT_DIR / ".matplotlib"))
+OUT_DIR = SCRIPT_DIR / "speedup"
+SPEEDUP_TEX = (
+    "\\begin{center}\n"
+    "\\includegraphics[width=\\textwidth]{experiments/speedup/speedup.pdf}\n"
+    "\\captionof{figure}{Self-Speedup.}\n"
+    "\\label{fig:speedup}\n"
+    "\\end{center}\n"
+)
 
 import matplotlib.pyplot as plt
 
@@ -181,7 +189,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=SCRIPT_DIR,
+        default=OUT_DIR,
         help="Directory to write the generated figure.",
     )
     parser.add_argument(
@@ -202,6 +210,8 @@ def main() -> None:
     all_data = collect_all_data(base_dir)
     output_path = output_dir / f"speedup.{args.output_format}"
     draw_speedup_grid(all_data, output_path)
+    if args.output_format == "pdf":
+        (output_dir / "speedup.tex").write_text(SPEEDUP_TEX, encoding="utf-8")
     print(f"Wrote {output_path}")
 
 
