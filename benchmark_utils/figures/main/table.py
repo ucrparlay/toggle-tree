@@ -1,28 +1,30 @@
 import csv
 import math
 from collections import OrderedDict
+from pathlib import Path
 
 
-csv_path = r"table.csv"
+MAIN_DIR = Path(__file__).resolve().parent / "main"
+CSV_PATH = MAIN_DIR / "table.csv"
 significant_digits = 3
 tasks = [
     {
-        "outdir": "exp1.1.tex",
+        "outdir": MAIN_DIR / "main_table1.tex",
         "cols": ["F", "H", "J", "S", "T", "U"],
         "caption": "",
         "label": "",
     },
     {
-        "outdir": "exp1.2.tex",
+        "outdir": MAIN_DIR / "main_table2.tex",
         "cols": ["N", "P", "R", "K", "M", "C", "E"],
         "caption": "End-to-end Comparison",
-        "label": "tab:exp1",
+        "label": "tab:main_table",
     },
     {
-        "outdir": "exp2.tex",
+        "outdir": MAIN_DIR / "main_table_hashbag.tex",
         "cols": ["G", "I", "O", "Q", "L", "M", "D", "E"],
         "caption": "Comparison with Hashbag",
-        "label": "tab:exp2",
+        "label": "tab:main_table_hashbag",
     },
 ]
 
@@ -135,15 +137,19 @@ def render_table(top_header, sub_header, grouped_rows, all_rows, task):
     )
     body_rows = compute_rows(grouped_rows, all_rows, column_indices)
 
+    has_caption = bool(task.get("caption"))
     align_spec = "l" + "c" * len(column_indices)
-    lines = [
-        r"\begin{table}[htbp]",
-        r"\centering",
-        r"\small",
-        rf"\begin{{tabular}}{{{align_spec}}}",
-        r"\toprule",
-        first_header + r" \\",
-    ]
+    lines = []
+    lines.append(r"\begin{center}")
+
+    lines.extend(
+        [
+            r"\small",
+            rf"\begin{{tabular}}{{{align_spec}}}",
+            r"\toprule",
+            first_header + r" \\",
+        ]
+    )
 
     lines.extend(cmidrules)
     lines.extend(
@@ -162,26 +168,26 @@ def render_table(top_header, sub_header, grouped_rows, all_rows, task):
         [
             r"\bottomrule",
             r"\end{tabular}",
+            r"\medskip",
         ]
     )
 
-    if task.get("caption"):
-        lines.append(rf"\caption{{{task['caption']}}}")
+    if has_caption:
+        lines.append(rf"\captionof{{table}}{{{task['caption']}}}")
     if task.get("label"):
         lines.append(rf"\label{{{task['label']}}}")
-    lines.append(r"\end{table}")
+    lines.append(r"\end{center}")
 
     return "\n".join(lines) + "\n"
 
-
 def main():
-    top_header, sub_header, data_rows = load_csv(csv_path)
+    top_header, sub_header, data_rows = load_csv(CSV_PATH)
     top_header = fill_merged_header_cells(top_header)
     grouped_rows = group_rows_by_type(data_rows)
 
     for task in tasks:
         latex = render_table(top_header, sub_header, grouped_rows, data_rows, task)
-        with open(task["outdir"], "w", encoding="utf-8") as file:
+        with task["outdir"].open("w", encoding="utf-8") as file:
             file.write(latex)
 
 

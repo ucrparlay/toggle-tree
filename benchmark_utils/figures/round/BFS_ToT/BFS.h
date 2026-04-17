@@ -1,0 +1,61 @@
+#pragma once
+#include <toggle/toggle.h>
+#include <vector>
+
+template <class Graph>
+std::pair<parlay::sequence<uint32_t>, std::vector<double>>
+BFS(Graph& G, size_t s=0) {
+    const size_t n = G.n;
+    uint8_t mode = 0;
+    auto active = toggle::Active(n); 
+    auto frontier = toggle::Frontier(n);
+    auto result = parlay::sequence<uint32_t>(n, UINT32_MAX); 
+    auto rounds = std::vector<double>();
+    frontier.insert_next(s);
+    active.remove(s);
+    parlay::internal::timer t;
+    for (uint32_t round = 0; ; round++) {
+        t.start();
+        if (mode == 0 || mode == 2) {
+            if (!frontier.advance_to_next()) { t.stop(); break; }
+            if (mode == 0 && round < uint32_t(2 * std::log(n)) && frontier.reduce_edge(G) > (G.m >> 3)) {
+                frontier.for_each([&](uint32_t s) { result[s] = round; });
+                mode = 1;
+                rounds.push_back(t.stop());
+                continue;
+            }
+            frontier.for_each([&](uint32_t s) { 
+                result[s] = round;
+                parlay::parallel_for(G.offsets[s], G.offsets[s+1], [&](size_t i) { 
+                    int32_t d = G.edges[i].idx;
+                    if (active.contains(d)) {
+                        active.remove(d); frontier.insert_next(d);
+                    }
+                }, 256);
+            });
+            rounds.push_back(t.stop());
+        }
+        else {  // Direction Optimization
+            active.for_each([&](size_t s) {
+                for (size_t i = G.in_offsets[s]; i < G.in_offsets[s+1]; i++) { 
+                    uint32_t d = G.in_edges[i].idx;
+                    if (!active.contains(d)) { 
+                        frontier.insert_next(s); 
+                        return;
+                    }
+                }
+            });
+            if (!frontier.advance_to_next()) { t.stop(); break; }
+            if (frontier.reduce_vertex() < (G.n >> 6)) {
+                frontier.for_each([&](uint32_t s) { frontier.insert_next(s); active.remove(s); });
+                round--;
+                mode = 2;
+                t.stop();
+                continue;
+            }
+            frontier.for_each([&](uint32_t s) { result[s] = round; active.remove(s); });
+            t.stop();
+        }
+    }
+    return {result, rounds};
+}
