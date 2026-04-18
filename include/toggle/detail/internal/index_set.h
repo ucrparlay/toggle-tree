@@ -130,6 +130,29 @@ struct IndexSet {
         return sum;
     }
     inline uint64_t reduce_vertex(){ return empty() ? 0 : reduce_vertex(0, 0); }
+
+    inline uint64_t approximate_vertex(int32_t layer, uint64_t base) {
+        uint64_t mask = bitmap[layer][idx(layer,base)];
+        uint64_t sum = 0;
+        if (layer == 2) {
+            for(int32_t i=0; i<__builtin_popcountll(mask); i++){
+                uint64_t childbase = base+(fnd(i, mask)<<off(3));
+                uint64_t childmask = bitmap[3][idx(3,childbase)];
+                for(int32_t j=0; j<__builtin_popcountll(childmask); j++){
+                    sum += __builtin_popcountll(bitmap[4][idx(4,childbase+(fnd(j, childmask)<<off(4)))]);
+                }
+            }
+        }
+        else {
+            uint64_t sums[__builtin_popcountll(mask)];
+            parlay::parallel_for(0, __builtin_popcountll(mask), [&](int32_t i){
+                sums[i] = approximate_vertex(layer+1, base+(fnd(i, mask)<<off(layer+1)));
+            },1);
+            for(int32_t i=0; i<__builtin_popcountll(mask);i++) sum += sums[i];
+        }
+        return sum;
+    }
+    inline uint64_t approximate_vertex(){ return empty() ? 0 : approximate_vertex(0, 0); }
 };
 
 }} // namespace internal & ParSet

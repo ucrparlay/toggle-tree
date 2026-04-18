@@ -12,14 +12,49 @@ parlay::sequence<uint32_t> BFS(Graph& G, size_t s=0) {
     auto result = parlay::sequence<uint32_t>(n, UINT32_MAX); 
     frontier.insert_next(s);
     active.remove(s);
+
+    uint32_t last_size = 0, this_size = 0; int32_t use_vgc = -std::log2(n);;
     for (uint32_t round = 0; ; round++) {
-        if (mode == 0 || mode == 2) {
+        if (mode == 0) {
             if (!frontier.advance_to_next()) break;
-            if (mode == 0 && round < uint32_t(2 * std::log(n)) && frontier.reduce_edge(G) > (G.m >> 3)) {
+            if (frontier.reduce_edge(G) > (G.m >> 3)) {
                 frontier.for_each([&](uint32_t s) { result[s] = round; });
                 mode = 1; continue;
             }
-            if (round == uint32_t(2 * std::log(n))) {
+            frontier.for_each([&](uint32_t s) { 
+                result[s] = round;
+                parlay::parallel_for(G.offsets[s], G.offsets[s+1], [&](size_t i) { 
+                    uint32_t d = G.edges[i].idx;
+                    if (active.contains(d)) {
+                        active.remove(d); frontier.insert_next(d);
+                    }
+                }, 256);
+            });
+            if (round == uint32_t(std::log(n))) mode = 2;
+        }
+        else if (mode == 1) {  // Direction Optimization
+            active.for_each([&](size_t s) {
+                for (size_t i = G.in_offsets[s]; i < G.in_offsets[s+1]; i++) { 
+                    uint32_t d = G.in_edges[i].idx;
+                    if (!active.contains(d)) { 
+                        frontier.insert_next(s); 
+                        return;
+                    }
+                }
+            });
+            if (!frontier.advance_to_next()) break;
+            if (frontier.reduce_vertex() < (G.n >> 6)) {
+                frontier.for_each([&](uint32_t s) { frontier.insert_next(s); active.remove(s); });
+                round--; mode = 2; continue;
+            }
+            frontier.for_each([&](uint32_t s) { result[s] = round; active.remove(s); });
+        }
+        else if (mode == 2) {  
+            if (!frontier.advance_to_next()) break;
+            this_size = frontier.approximate_vertex();
+            if (this_size < last_size) use_vgc++;
+            last_size = this_size;
+            if (use_vgc >= 0 && this_size < 100000) {
                 frontier.for_each([&](uint32_t s) { 
                     result[s] = round;
                     parlay::parallel_for(G.offsets[s], G.offsets[s+1], [&](size_t i) { 
@@ -40,23 +75,6 @@ parlay::sequence<uint32_t> BFS(Graph& G, size_t s=0) {
                     }
                 }, 256);
             });
-        }
-        else if (mode == 1) {  // Direction Optimization
-            active.for_each([&](size_t s) {
-                for (size_t i = G.in_offsets[s]; i < G.in_offsets[s+1]; i++) { 
-                    uint32_t d = G.in_edges[i].idx;
-                    if (!active.contains(d)) { 
-                        frontier.insert_next(s); 
-                        return;
-                    }
-                }
-            });
-            if (!frontier.advance_to_next()) break;
-            if (frontier.reduce_vertex() < (G.n >> 6)) {
-                frontier.for_each([&](uint32_t s) { frontier.insert_next(s); active.remove(s); });
-                round--; mode = 2; continue;
-            }
-            frontier.for_each([&](uint32_t s) { result[s] = round; active.remove(s); });
         }
         else {  // Local Search
             if (!frontier.advance_to_next()) break;

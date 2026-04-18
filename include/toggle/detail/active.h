@@ -20,6 +20,7 @@ struct Active {
     inline T reduce(F&& f, Combine&& combine){ return active.reduce<T, Identity>(f, combine); }
 
     inline uint64_t reduce_vertex(){ return active.reduce_vertex(); }
+    inline uint64_t approximate_vertex(){ return active.approximate_vertex(); }
     template <class Graph> inline uint64_t reduce_edge(const Graph& G){ 
         return reduce<uint64_t, 0>(
             [&] (size_t i) { return G.offsets[i+1] - G.offsets[i]; },
