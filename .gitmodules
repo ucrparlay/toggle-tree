@@ -1,6 +1,0 @@
-[submodule "benchmarks/_supplementary/--recursive"]
-	path = benchmarks/_supplementary/--recursive
-	url = git@github.com:ucrparlay/Parallel-KCore.git
-[submodule "benchmarks/_supplementary/Parallel-KCore"]
-	path = benchmarks/_supplementary/Parallel-KCore
-	url = git@github.com:ucrparlay/Parallel-KCore.git
