@@ -31,7 +31,7 @@ struct IndexMap {
             length = (length + 63) >> 6;
         }
     }
-    inline bool update(size_t idx, T value) {
+    inline bool dec_val(size_t idx, T value) {
         if (write_min(sequence[idx], value)) {
             for (int32_t i=5; i>=0; i--) { if (__atomic_fetch_or(&tree[i][idx>>off(i)].dirty, (1ULL<<((idx>>off(i+1)) & 63)), __ATOMIC_RELAXED)) return true; }
             return true;

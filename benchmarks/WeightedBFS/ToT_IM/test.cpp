@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
     std::cout << std::right << std::setw(66) << ("Graph: " + G.name) << "\n";
     std::cout << "Load: " << G.load_time << "  Dump: " << dumppath << "\n";
     std::cout << "Threads: " << parlay::num_workers() << "  Rounds: " << num_rounds << "\n";
-
+    
     auto perm = parlay::random_permutation<uint32_t>(G.n);
     parlay::internal::timer t; double tt = 0, ttt = 0;
     parlay::sequence<int32_t> result; uint32_t base = 0;
@@ -28,6 +28,6 @@ int main(int argc, char** argv) {
     }
     ttt /= num_rounds;
     
-    graph_io::process_result(ttt, result, "..", G.name, "IndexSet", dumppath); 
+    graph_io::process_result(ttt, result, "..", G.name, "ToT(IM)", dumppath); 
     return 0;
 }
