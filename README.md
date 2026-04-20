@@ -80,9 +80,9 @@ toggle::Active active(n)     // full by default
 | Return Value | Active | Frontier |
 | --- | --- | --- | 
 | bool | empty() | empty() | 
-| bool | contains() | contains(i) | 
-| void | insert() | insert(i) | 
-| void | remove() | remove(i) | 
+| bool | contains(i) | contains(i) | 
+| void | insert(i) | insert(i) | 
+| void | remove(i) | remove(i) | 
 | bool | -- | empty_next() | 
 | bool | -- | contains_next(i) | 
 | void | -- | insert_next(i) | 
