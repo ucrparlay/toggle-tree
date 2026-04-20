@@ -37,7 +37,6 @@ ROAD=(
     europe_sym
     asia_sym
     north-america_sym
-    us_sym
     africa_sym
     RoadUSA_sym
     Germany_sym
