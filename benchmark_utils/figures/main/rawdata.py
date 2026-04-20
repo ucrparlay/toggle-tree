@@ -39,12 +39,24 @@ ABBREV = {
 
 TASKS = [
     {
-        "title": "BFS and KCore",
-        "cols": ["F", "G", "H", "I", "J", "N", "O", "P", "Q", "R"],
+        "title": "BellmanFord",
+        "cols": ["C", "D", "E"],
     },
     {
-        "title": "BellmanFord, Coloring, and WeightedBFS",
-        "cols": ["C", "D", "E", "K", "L", "M", "S", "T", "U"],
+        "title": "BFS",
+        "cols": ["F", "G", "H", "I", "J"],
+    },
+    {
+        "title": "Coloring",
+        "cols": ["K", "L", "M"],
+    },
+    {
+        "title": "KCore",
+        "cols": ["N", "O", "P", "Q", "R"],
+    },
+    {
+        "title": "WeightedBFS",
+        "cols": ["S", "T", "U"],
     },
 ]
 
@@ -99,55 +111,62 @@ def format_cell(value):
     return f"{number:.{decimals}f}"
 
 
-def build_header_rows(top_header, sub_header, column_indices):
-    selected_top = [top_header[index] for index in column_indices]
+def build_header_rows(sub_header, column_indices):
     selected_sub = [sub_header[index] for index in column_indices]
 
-    first_row_parts = [""]
-    cmidrules = []
-    start = 0
-
-    while start < len(selected_top):
-        end = start + 1
-        while end < len(selected_top) and selected_top[end] == selected_top[start]:
-            end += 1
-
-        span = end - start
-        if span == 1:
-            first_row_parts.append(latex_escape(selected_top[start]))
-        else:
-            first_row_parts.append(
-                f"\\multicolumn{{{span}}}{{c}}{{{latex_escape(selected_top[start])}}}"
-            )
-            cmidrules.append(f"\\cmidrule(lr){{{start + 2}-{end + 1}}}")
-
-        start = end
-
-    second_row = " & ".join(["Graph"] + [latex_escape(cell) for cell in selected_sub])
-    return " & ".join(first_row_parts), second_row, cmidrules
+    first_tot = next(
+        index for index, cell in enumerate(selected_sub) if "tot" in cell.lower()
+    )
+    group_row = [
+        r"\multicolumn{2}{c|}{\textbf{Graph Statistics}}",
+        rf"\multicolumn{{{first_tot}}}{{c|}}{{\textbf{{Baselines}}}}",
+        rf"\multicolumn{{{len(selected_sub) - first_tot}}}{{c}}{{\textbf{{Ours}}}}",
+    ]
+    column_row = " & ".join(
+        ["Type", "Graph"] + [latex_escape(cell) for cell in selected_sub]
+    )
+    return " & ".join(group_row), column_row, first_tot
 
 
 def render_table(top_header, sub_header, data_rows, task):
     column_indices = [excel_col_to_index(col) for col in task["cols"]]
-    first_header, second_header, cmidrules = build_header_rows(
-        top_header, sub_header, column_indices
-    )
+    group_header, column_header, first_tot = build_header_rows(sub_header, column_indices)
 
-    align_spec = "l" + "c" * len(column_indices)
+    data_align = "".join(
+        "|c" if index == first_tot else "c" for index in range(len(column_indices))
+    )
+    align_spec = "ll|" + data_align
     lines = [
         r"\begin{center}",
         r"\scriptsize",
         rf"\begin{{tabular}}{{{align_spec}}}",
         r"\toprule",
-        first_header + r" \\",
+        group_header + r" \\[2pt]",
+        column_header + r" \\",
     ]
-    lines.extend(cmidrules)
-    lines.extend([second_header + r" \\", r"\midrule"])
+    lines.append(r"\midrule")
 
+    current_type = ""
     for row in data_rows:
-        values = [format_cell(row[index]) for index in column_indices]
+        type_name = row[0].strip()
+        if type_name:
+            if current_type:
+                lines.append(r"\midrule")
+            current_type = type_name
+
+        numbers = [float(row[index]) for index in column_indices]
+        min_value = min(numbers)
+        values = [
+            rf"\textbf{{{format_cell(row[index])}}}"
+            if number == min_value
+            else format_cell(row[index])
+            for index, number in zip(column_indices, numbers)
+        ]
         graph_name = ABBREV.get(row[1], row[1])
-        lines.append(" & ".join([latex_escape(graph_name)] + values) + r" \\")
+        lines.append(
+            " & ".join([latex_escape(type_name), latex_escape(graph_name)] + values)
+            + r" \\"
+        )
 
     lines.extend(
         [
