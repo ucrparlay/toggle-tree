@@ -47,6 +47,7 @@ or `bash ./test.sh` for only one graph configured in `config.sh`.
 Scripts for testing all the algorithms are also provided: 
 
 ```bash
+[benchmark_utils/scripts]$ ./test_all.sh
 [benchmark_utils/scripts]$ ./bench_all.sh
 ```
 
@@ -58,7 +59,7 @@ After running benchmarks, two `.csv` files will be generated.
 
 ### 1.4. Bitwise Verification
 
-Aside from fast sanity check with hash, bitwise verification is also provided.
+Aside from fast sanity check with hash, there is a script for bitwise verification.
 
 ```bash
 [benchmark_utils/scripts]$ ./bitwise_verify.sh
