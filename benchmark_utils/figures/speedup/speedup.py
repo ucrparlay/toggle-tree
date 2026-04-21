@@ -27,8 +27,8 @@ SYSTEM_TASKS = {
 SYSTEM_RENDER_ORDER = ["GBBS", "PASGAL", "ToT"]
 SYSTEM_STYLES = {
     "ToT": {"marker": "o", "color": "#d62728"},
-    "GBBS": {"marker": "s", "color": "#1f77b4"},
-    "PASGAL": {"marker": "^", "color": "#2ca02c"},
+    "GBBS": {"marker": "s", "color": "#6baed6"},
+    "PASGAL": {"marker": "^", "color": "#b276b2"},
 }
 GRAPH_LABELS = {
     "friendster_sym": "FS",
@@ -81,11 +81,13 @@ def read_scale_file(file_path: Path) -> Dict[str, List[float]]:
 
 def collect_all_data(base_dir: Path) -> Dict[str, Dict[str, Dict[str, List[float]]]]:
     all_data: Dict[str, Dict[str, Dict[str, List[float]]]] = {}
+    data_dir = base_dir / "speedup"
+    if not data_dir.is_dir():
+        data_dir = base_dir
     for system, tasks in SYSTEM_TASKS.items():
-        data_dir = base_dir / system
         system_data: Dict[str, Dict[str, List[float]]] = {}
         for task in tasks:
-            system_data[task] = read_scale_file(data_dir / f"{task}.txt")
+            system_data[task] = read_scale_file(data_dir / f"{system}_{task}.txt")
         all_data[system] = system_data
     return all_data
 

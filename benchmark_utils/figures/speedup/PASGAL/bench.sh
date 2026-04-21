@@ -6,6 +6,7 @@ source ../../../../benchmark_utils/scripts/config.sh
 
 BFS_DIR=../../../../benchmarks/BFS/PASGAL
 KCORE_DIR=../../../../benchmarks/KCore/PASGAL
+OUT_DIR=../speedup
 THREADS=(1 2 4 12 24 48 96 192)
 PLOT=(
     com-orkut_sym
@@ -78,15 +79,16 @@ write_speedup_row() {
 
 build_targets
 
-: > bfs.txt
-: > kcore.txt
+mkdir -p "${OUT_DIR}"
+: > "${OUT_DIR}/PASGAL_bfs.txt"
+: > "${OUT_DIR}/PASGAL_kcore.txt"
 
 for g in "${PLOT[@]}"; do
     echo "=================================================================="
     printf "%66s\n" "Graph: ${g}"
     echo "Threads: ${THREADS[*]}  Rounds: ${NUM_ROUNDS}"
-    echo "Outputs: bfs.txt kcore.txt"
+    echo "Outputs: ${OUT_DIR}/PASGAL_bfs.txt ${OUT_DIR}/PASGAL_kcore.txt"
 
-    write_speedup_row "BFS" run_bfs "bfs.txt" "${g}"
-    write_speedup_row "KCore" run_kcore "kcore.txt" "${g}"
+    write_speedup_row "BFS" run_bfs "${OUT_DIR}/PASGAL_bfs.txt" "${g}"
+    write_speedup_row "KCore" run_kcore "${OUT_DIR}/PASGAL_kcore.txt" "${g}"
 done

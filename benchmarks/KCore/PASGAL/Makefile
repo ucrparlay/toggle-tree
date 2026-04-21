@@ -41,4 +41,4 @@ kcore:	kcore.cpp kcore.h
 	$(CC) $(CPPFLAGS) $(INCLUDE_PATH) kcore.cpp -o kcore
 
 clean:
-	rm kcore
+	rm -f kcore

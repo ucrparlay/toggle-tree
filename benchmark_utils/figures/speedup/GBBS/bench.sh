@@ -5,6 +5,7 @@ set -euo pipefail
 source ../../../../benchmark_utils/scripts/config.sh
 
 BAZEL_DIR=../../../../benchmark_utils/bazel
+OUT_DIR=../speedup
 THREADS=(1 2 4 12 24 48 96 192)
 PLOT=(
     com-orkut_sym
@@ -63,13 +64,18 @@ write_speedup_row() {
 
 build_targets
 
+mkdir -p "${OUT_DIR}"
+: > "${OUT_DIR}/GBBS_bfs.txt"
+: > "${OUT_DIR}/GBBS_kcore.txt"
+: > "${OUT_DIR}/GBBS_coloring.txt"
+
 for g in "${PLOT[@]}"; do
     echo "=================================================================="
     printf "%66s\n" "Graph: ${g}"
     echo "Threads: ${THREADS[*]}  Rounds: ${NUM_ROUNDS}"
-    echo "Outputs: bfs.txt kcore.txt coloring.txt"
+    echo "Outputs: ${OUT_DIR}/GBBS_bfs.txt ${OUT_DIR}/GBBS_kcore.txt ${OUT_DIR}/GBBS_coloring.txt"
 
-    write_speedup_row "BFS" "bazel-bin/external/GBBS_BFS/BFS_main" "bfs.txt" "${g}"
-    write_speedup_row "KCore" "bazel-bin/external/GBBS_KCore/KCore_main" "kcore.txt" "${g}"
-    write_speedup_row "Coloring" "bazel-bin/external/GBBS_Coloring/GraphColoring_main" "coloring.txt" "${g}"
+    write_speedup_row "BFS" "bazel-bin/external/GBBS_BFS/BFS_main" "${OUT_DIR}/GBBS_bfs.txt" "${g}"
+    write_speedup_row "KCore" "bazel-bin/external/GBBS_KCore/KCore_main" "${OUT_DIR}/GBBS_kcore.txt" "${g}"
+    write_speedup_row "Coloring" "bazel-bin/external/GBBS_Coloring/GraphColoring_main" "${OUT_DIR}/GBBS_coloring.txt" "${g}"
 done
