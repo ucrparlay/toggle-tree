@@ -4,10 +4,11 @@
 template <class Graph>
 parlay::sequence<int32_t> WeightedBFS(Graph& G, size_t source=0) {
     const size_t n = G.n;
+    auto dist = parlay::sequence<int32_t>(n, INT32_MAX); 
     auto active = toggle::Active(n, false); 
     auto frontier = toggle::Frontier(n);
-    auto dist = parlay::sequence<int32_t>(n, INT32_MAX); dist[source] = 0;
-    active.insert(source);
+    dist[source] = 0; active.insert(source);
+
     for (uint32_t round = 0; !active.empty(); round++) {
         active.for_each([&](uint32_t s) { 
             if (dist[s] == round) { active.remove(s); frontier.insert_next(s);}
