@@ -97,7 +97,7 @@ toggle::Active active(n)     // full by default
 | void | for_each(F) | for_each(F) | 
 | T | reduce<T,identity>(F, combine) | reduce<T,identity>(F, combine) | 
 
-Frontier.for_each() by default removes all the elements after execution, while Active.reduce() keeps them.
+Frontier.for_each() by default removes all the elements after execution, while Active.reduce() keeps them. You can also manually let it clear or reserve by passing the templete parameter `<true>` or `<false>`
 
 Below are some frequentedly used reduce functions, for convenience:
 
