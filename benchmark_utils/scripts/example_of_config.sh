@@ -6,9 +6,8 @@
 export PARLAY_NUM_THREADS=$(nproc)
 NUM_ROUNDS=5
 BIN_DIR=/data/graphs/bin/
-ADJ_DIR=/data/graphs/pbbs/
 
-TEST="${BIN_DIR}twitter_sym"
+TEST="${BIN_DIR}Germany_sym"
 
 TYPES=(
     SOCIAL

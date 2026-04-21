@@ -1,30 +1,24 @@
-# Make sure you have compiled both GBBS and Parset implementations through test_gbbs.sh and test_parset.sh
+# Make sure you have compiled both GBBS and ToT implementations
 
-TEST_ALGO=BFS               # BFS Coloring KCore BellmanFord
-TEST_GRAPH=twitter_sym
-TEST_TYPE=bin               # bin adj
-TEST_GBBS=bazel-bin/external/gbbs_bfs/BFS_main
-# TEST_GBBS=bazel-bin/external/gbbs_coloring/GraphColoring_main
-# TEST_GBBS=bazel-bin/external/gbbs_kcore/KCore_main
-# TEST_GBBS=bazel-bin/external/gbbs_bellman_ford/BellmanFord_main
+TEST_ALGO=BFS                    # BellmanFord BFS Coloring KCore WeightedBFS
+TEST_FOLDER=ToT_IM
+TEST_GRAPH=Germany_sym           # Don't forget to add _wghlog for weighted graphs
+
+# TEST_GBBS=bazel-bin/external/GBBS_BellmanFord/BellmanFord_main
+TEST_GBBS=bazel-bin/external/GBBS_BFS/BFS_main
+# TEST_GBBS=bazel-bin/external/GBBS_Coloring/GraphColoring_main
+# TEST_GBBS=bazel-bin/external/GBBS_KCore/KCore_main
+# TEST_GBBS=bazel-bin/external/GBBS_WeightedBFS/wBFS_main
 
 source config.sh
-if [[ "$TEST_TYPE" == "bin" ]]; then
-  TEST_DIR="$BIN_DIR"
-else
-  TEST_DIR="$ADJ_DIR"
-fi
+TEST_DIR="$BIN_DIR"
 
 cd ../bazel
-if [[ "$TEST_TYPE" == "bin" ]]; then
-  numactl -i all $TEST_GBBS -dump "../DumpedGBBS.txt" -s -b "$TEST_DIR$TEST_GRAPH.$TEST_TYPE"
-else
-  numactl -i all $TEST_GBBS -dump "../DumpedGBBS.txt" -s "$TEST_DIR$TEST_GRAPH.$TEST_TYPE"
-fi
+numactl -i all $TEST_GBBS -dump "../DumpedGBBS.txt" -num_rounds 1 -s -b "$BIN_DIR$TEST_GRAPH.bin"
 
-cd ../../benchmarks/$TEST_ALGO/ToT
-numactl -i all ./test "$TEST_DIR$TEST_GRAPH.$TEST_TYPE" ../../../benchmark_utils/DumpedParSet.txt
+cd ../../benchmarks/$TEST_ALGO/$TEST_FOLDER
+numactl -i all ./test "$BIN_DIR$TEST_GRAPH.bin" 1 ../../../benchmark_utils/DumpedToT.txt
 
 cd ../../../benchmark_utils
-echo "================ bitwise verification ================"
-cmp -s DumpedGBBS.txt DumpedParSet.txt && echo "exactly same" || cmp DumpedGBBS.txt DumpedParSet.txt | head -n 1
+echo "====================== bitwise verification ======================"
+cmp -s DumpedGBBS.txt DumpedToT.txt && echo "Exactly Same" || cmp DumpedGBBS.txt DumpedToT.txt | head -n 1

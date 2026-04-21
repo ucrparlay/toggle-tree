@@ -8,11 +8,11 @@ Supports graphs with up to 2³⁶ vertices and 2⁶⁴ edges.
 
 ## 1. Benchmarking
 
-Benchmarks in Toggle Tree are designed to produce bit-for-bit identical output with the GBBS/Hashbag baseline implementations.
+Benchmarks in Toggle Tree are designed to produce bit-for-bit identical output with the GBBS/PASGAL baseline implementations.
 
 ### 1.1. Environment Setup
 
-No external dependencies are required for running ToT/Hashbag benchmarks.
+No external dependencies are required for running ToT/PASGAL benchmarks.
 They only rely on parlaylib, and we have vendored it for benchmarking.
 
 Benchmarking GBBS baseline Requires bazel 7.7.1.
@@ -54,12 +54,11 @@ After running benchmarks, two `.csv` files will be generated.
 
 `benchmark.csv` contains timing results.
 
-`verify.csv` contains results of using the same hash function on both outputs of GBBS and Toggle Tree. This is intended as a fast sanity check, since writing and comparing full outputs can be impractical at scale. The hash function implementation is in `benchmark_utils/graph/verify.h`. Bitwise verification is provided in the next chapter.
-
-These scripts does not include implementations in `benchmarks/_supplementary`. There are figure-related code, and sota implementations of algorithms.
-Don't forget to cd into them and run `bash ./bench.sh`.
+`verify.csv` contains results of using the same hash function on both outputs of GBBS and Toggle Tree. This is intended as a fast sanity check, since writing and comparing full outputs can be impractical at scale. 
 
 ### 1.4. Bitwise Verification
+
+Aside from fast sanity check with hash, bitwise verification is also provided.
 
 ```bash
 [benchmark_utils/scripts]$ ./bitwise_verify.sh
