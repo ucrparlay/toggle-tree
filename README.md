@@ -72,6 +72,12 @@ To select a certain graph with a certain algorithm, please edit the first few li
 Here is a breif overview of what is included in the interface.
 For more detailed infomation of usage, it will be more straitforward to read `include/toggle/detail/active.h` and `include/toggle/detail/frontier.h`.
 
+Note that the actual interface contains some more inplementation details compared to the paper's presudocode.
+There is no explicit clear function provided, instead, unconditional clear can be done by passing a template parameter `<true>` on `for_each`, 
+and conditional clear is recommended to directly call `remove` inside `for_each`. 
+Remember that any `for_each` or `reduce` visit can only remove the vertex itself!
+Do NOT call remove on another vertex inside a same Toggle Tree! 
+
 ```cpp
 toggle::Frontier frontier(n) // empty by default
 toggle::Active active(n)     // full by default
