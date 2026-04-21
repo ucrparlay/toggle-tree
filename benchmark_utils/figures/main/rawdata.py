@@ -40,22 +40,27 @@ ABBREV = {
 TASKS = [
     {
         "title": "BellmanFord",
+        "caption": "Raw data: BellmanFord. ToT: \\DataStructure. Unit: seconds. Each value is the arithmetic mean of the end-to-end time over five runs after warmup. Bold values indicate the shortest running time.",
         "cols": ["C", "D", "E"],
     },
     {
         "title": "BFS",
+        "caption": "Raw data: BFS. ToT: \\DataStructure. ToT+VGC: \\DataStructure inplementation optimized with vertivcal granularity control. Unit: seconds. Each value is the arithmetic mean of the end-to-end time over five runs after warmup. Bold values indicate the shortest running time.",
         "cols": ["F", "G", "H", "I", "J"],
     },
     {
         "title": "Coloring",
+        "caption": "Raw data: Coloring. ToT: \\DataStructure. Unit: seconds. Each value is the arithmetic mean of the end-to-end time over five runs after warmup. Bold values indicate the shortest running time.",
         "cols": ["K", "L", "M"],
     },
     {
         "title": "KCore",
+        "caption": "Raw data: KCore. ToT: \\DataStructure. ToT+VGC+SPL: \\DataStructure inplementation optimized with vertivcal granularity control and sampling. Unit: seconds. Each value is the arithmetic mean of the end-to-end time over five runs after warmup. Bold values indicate the shortest running time.",
         "cols": ["N", "O", "P", "Q", "R"],
     },
     {
         "title": "WeightedBFS",
+        "caption": "Raw data: WeightedBFS. ToT(IS): \\DataStructure inplementation with \\DataTypeA. ToT(IM): \\DataStructure inplementation with \\DataTypeB. Unit: seconds. Each value is the arithmetic mean of the end-to-end time over five runs after warmup. Bold values indicate the shortest running time.",
         "cols": ["S", "T", "U"],
     },
 ]
@@ -173,7 +178,7 @@ def render_table(top_header, sub_header, data_rows, task):
             r"\bottomrule",
             r"\end{tabular}",
             r"\medskip",
-            rf"\captionof{{table}}{{Raw data: {task['title']}}}",
+            rf"\captionof{{table}}{{{task['caption']}}}",
             r"\end{center}",
         ]
     )
