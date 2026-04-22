@@ -1,7 +1,7 @@
 # Make sure you have compiled both GBBS and ToT implementations
 
 TEST_ALGO=BFS                    # BellmanFord BFS Coloring KCore WeightedBFS
-TEST_FOLDER=ToT_IM
+TEST_FOLDER=ToT+VGC
 TEST_GRAPH=Germany_sym           # Don't forget to add _wghlog for weighted graphs
 
 # TEST_GBBS=bazel-bin/external/GBBS_BellmanFord/BellmanFord_main
