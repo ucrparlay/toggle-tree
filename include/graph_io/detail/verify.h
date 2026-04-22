@@ -10,6 +10,7 @@
 #include <filesystem>
 #include <iostream>
 #include <fstream>
+#include <limits>
 
 
 namespace graph_io {
@@ -128,6 +129,13 @@ void process_result(double t, T& result, std::string csvpath, std::string row, s
     parlay::sequence<uint32_t> res_32(result.size(), 0);
     parlay::parallel_for(0, result.size(), [&](size_t i){ res_32[i] = result[i]; });
     std::cout << "Running Time: " << t << " sec\n";
+    using result_type = typename T::value_type;
+    auto max_inputs = parlay::delayed_tabulate(result.size(), [&](size_t i) -> result_type {
+        result_type v = result[i];
+        return v == std::numeric_limits<result_type>::max() ? std::numeric_limits<result_type>::min() : v;
+    });
+    result_type result_max = parlay::reduce(max_inputs, parlay::maxm<result_type>());
+    std::cout << "Maximum Res : " << result_max << '\n';
     std::string res_hash = internal::get_hash(res_32);
     std::cout << "Verify  Hash: " << res_hash << '\n';
     internal::update_csv_cell(csvpath + "/benchmark.csv", row, column, std::to_string(t));

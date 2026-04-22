@@ -15,6 +15,7 @@ ABBREV = {
     "socfb-konect_sym": "FK",
     "socfb-uci-uni_sym": "FU",
     "eu-2015-host_sym": "EH",
+    "clueweb_sym": "CW",
     "sd_arc_sym": "SD",
     "enwiki-2023_sym": "EW",
     "arabic_sym": "AR",
@@ -27,14 +28,11 @@ ABBREV = {
     "europe_sym": "EU",
     "asia_sym": "AS",
     "north-america_sym": "NA",
-    "us_sym": "US",
     "africa_sym": "AF",
     "RoadUSA_sym": "RU",
     "Germany_sym": "DE",
     "hugebubbles-00020_sym": "BBL",
     "hugetrace-00020_sym": "TRCE",
-    "clueweb_sym": "CW",
-    "hyperlink2014_sym": "HL14",
 }
 
 TASKS = [
@@ -45,7 +43,7 @@ TASKS = [
     },
     {
         "title": "BFS",
-        "caption": "Raw data: BFS. ToT: \\DataStructure. ToT+VGC: \\DataStructure inplementation optimized with vertivcal granularity control. Unit: seconds. Each value is the arithmetic mean of the end-to-end time over five runs after warmup. Bold values indicate the shortest running time.",
+        "caption": "Raw data: BFS. ToT: \\DataStructure. ToT+VGC: \\DataStructure implementation optimized with vertical granularity control. Unit: seconds. Each value is the arithmetic mean of the end-to-end time over five runs after warmup. Bold values indicate the shortest running time.",
         "cols": ["F", "G", "H", "I", "J"],
     },
     {
@@ -55,12 +53,12 @@ TASKS = [
     },
     {
         "title": "KCore",
-        "caption": "Raw data: KCore. ToT: \\DataStructure. ToT+VGC+SPL: \\DataStructure inplementation optimized with vertivcal granularity control and sampling. Unit: seconds. Each value is the arithmetic mean of the end-to-end time over five runs after warmup. Bold values indicate the shortest running time.",
+        "caption": "Raw data: KCore. ToT: \\DataStructure. ToT+VGC+SPL: \\DataStructure implementation optimized with vertical granularity control and sampling. Unit: seconds. Each value is the arithmetic mean of the end-to-end time over five runs after warmup. Bold values indicate the shortest running time.",
         "cols": ["N", "O", "P", "Q", "R"],
     },
     {
         "title": "WeightedBFS",
-        "caption": "Raw data: WeightedBFS. ToT(IS): \\DataStructure inplementation with \\DataTypeA. ToT(IM): \\DataStructure inplementation with \\DataTypeB. Unit: seconds. Each value is the arithmetic mean of the end-to-end time over five runs after warmup. Bold values indicate the shortest running time.",
+        "caption": "Raw data: WeightedBFS. ToT(IS): \\DataStructure implementation with \\DataTypeA. ToT(IM): \\DataStructure implementation with \\DataTypeB. Unit: seconds. Each value is the arithmetic mean of the end-to-end time over five runs after warmup. Bold values indicate the shortest running time.",
         "cols": ["S", "T", "U"],
     },
 ]

@@ -18,6 +18,7 @@ ABBREV = {
     "socfb-konect_sym": "FK",
     "socfb-uci-uni_sym": "FU",
     "eu-2015-host_sym": "EH",
+    "clueweb_sym": "CW",
     "sd_arc_sym": "SD",
     "enwiki-2023_sym": "EW",
     "arabic_sym": "AR",
@@ -30,14 +31,11 @@ ABBREV = {
     "europe_sym": "EU",
     "asia_sym": "AS",
     "north-america_sym": "NA",
-    "us_sym": "US",
     "africa_sym": "AF",
     "RoadUSA_sym": "RU",
     "Germany_sym": "DE",
     "hugebubbles-00020_sym": "BBL",
     "hugetrace-00020_sym": "TRCE",
-    "clueweb_sym": "CW",
-    "hyperlink2014_sym": "HL14",
 }
 
 METHOD_COLORS = {
