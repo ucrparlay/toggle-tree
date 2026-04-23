@@ -1,6 +1,6 @@
 # Toggle Tree
 
-A parallel data structure. Function as a `vertex subset` for shared-memory graph algorithms.
+A parallel data structure. Functions as a `vertex subset` for shared-memory graph algorithms.
 
 Requires: Linux (x86_64 with the BMI2 instruction set), GCC >= 10.
 
@@ -15,7 +15,7 @@ Benchmarks in Toggle Tree are designed to produce bit-for-bit identical output w
 No external dependencies are required for running ToT/PASGAL benchmarks.
 They only rely on parlaylib, and we have vendored it for benchmarking.
 
-Benchmarking the GBBS baseline requires bazel 7.7.1.
+Benchmarking the GBBS baseline requires `Bazel 7.7.1`.
 Bazel is only used to build GBBS baselines, and has nothing to do with Toggle Tree.
 
 ### 1.2. Configuration
@@ -24,7 +24,7 @@ Bazel is only used to build GBBS baselines, and has nothing to do with Toggle Tr
 [benchmark_utils/scripts]$ cp example_of_config.sh config.sh
 ```
 
-Then configure the number of threads, your directory of graphs and the graphs to be benchmarked inside it.
+Then configure the number of threads, your graph directory, and the graphs to be benchmarked in the directory.
 
 If you don't have any graphs in your configured directory, you can use the following command to download them: 
 
@@ -41,7 +41,7 @@ If you don't have `*_wghlog.bin` weighted graphs in your configured directory, y
 ### 1.3. Benchmarking
 
 Each folder in `benchmarks/` is a separate implementation, 
-you can use `bash ./bench.sh` in them to run all the graphs, 
+you can use `bash ./bench.sh` in each of them to run all the graphs, 
 or `bash ./test.sh` for a single graph configured in `config.sh`.
 
 Scripts for testing all the algorithms are also provided: 
@@ -65,20 +65,20 @@ Aside from the fast hash-based sanity check, there is a script for bitwise verif
 [benchmark_utils/scripts]$ ./bitwise_verify.sh
 ```
 
-To select a certain graph with a certain algorithm, please edit the first few lines of `bitwise_verify.sh`.
+To select a specific graph with a specific algorithm, please edit the first few lines of `bitwise_verify.sh`.
 
 ## 2. Usage
 
-This a header-only C++ library. You may link to /include at compile time for usage. 
+This is a header-only C++ library. You may add `/include` to the include path when compiling.
 
 Here is a brief overview of what is included in the interface.
-For more detailed information of usage, it will be more straightforward to read `include/toggle/detail/active.h` and `include/toggle/detail/frontier.h`.
+For more detailed information about usage, it will be more straightforward to read `include/toggle/detail/active.h` and `include/toggle/detail/frontier.h`.
 
-Note that the actual interface contains some more implementation details compared to the paper's psudocode.
-There is no explicit clear function provided, instead, unconditional clear can be done by passing a template parameter `<true>` on `for_each`, 
-and conditional clear is recommended to directly call `remove` inside `for_each`. 
+Note that the actual interface contains more implementation details than the paper's pseudocode.
+There is no explicit clear function provided. Instead, unconditional clear can be done by passing a template parameter `<true>` to `for_each`, 
+and conditional clear should be done by directly calling `remove` inside `for_each`.
 Remember that any `for_each` or `reduce` visit can only remove the vertex itself!
-Do NOT call remove on another vertex inside a same Toggle Tree! 
+Do NOT call `remove` on another vertex inside the same Toggle Tree! 
 
 ```text
 toggle::Frontier frontier(n) // empty by default
@@ -99,9 +99,9 @@ toggle::Active active(n)     // full by default
 | void | for_each(F) | for_each(F) | 
 | T | reduce<T,identity>(F, combine) | reduce<T,identity>(F, combine) | 
 
-Frontier.for_each() by default removes all the elements after execution, while Active.reduce() keeps them. You can also manually let it clear or reserve by passing the templete parameter `<true>` or `<false>`
+`Frontier.for_each()` by default removes all the elements after execution, while `Active.for_each()` keeps them. You can also manually make it clear or preserve by passing the template parameter `<true>` or `<false>`.
 
-Below are some frequentedly used reduce functions, for convenience:
+Below are some frequently used reduce functions, provided for convenience:
 
 | Return Value | Active | Frontier |
 | --- | --- | --- | 
@@ -110,4 +110,4 @@ Below are some frequentedly used reduce functions, for convenience:
 | T | reduce_max(sequence) | reduce_max(sequence) | 
 | T | reduce_min(sequence) | reduce_min(sequence) | 
 
-There is also `include/toggle/detail/internal/index_map.h`, it is wrapped in `internal::` to suggest that, if `IndexSet` has better performance than `IndexMap`, it is highly possible that the algorithm is not efficient, such as `WeightedBFS`, which does not include stepping or local search.
+There is also `include/toggle/detail/internal/index_map.h`, which is wrapped in `internal::` to suggest that if `IndexSet` performs better than `IndexMap`, the algorithm is very likely inefficient, such as `WeightedBFS`, which does not use stepping or local search.
