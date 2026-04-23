@@ -1,6 +1,6 @@
 # Toggle Tree (ToT)
 
-Provides high-performance, composable parallel data structures with set semantics for shared-memory graph algorithms.
+A header-only C++ library. Provides high-performance, composable parallel data structures with set semantics for shared-memory graph algorithms.
 
 Requires: Linux (x86_64 with the BMI2 instruction set), GCC >= 10.
 
