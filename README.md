@@ -2,7 +2,7 @@
 
 Provides high-performance, composable parallel data structures with set semantics for shared-memory graph algorithms.
 
-Requires: Linux (x86_64), GCC >= 10.
+Requires: Linux (x86_64 with the BMI2 instruction set), GCC >= 10.
 
 Supports graphs with up to 2³⁶ vertices and 2⁶⁴ edges.
 
