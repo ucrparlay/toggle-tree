@@ -1,6 +1,6 @@
 # Toggle Tree
 
-A header-only C++ library, containing parallel data structure.
+A header-only C++ library, containing a parallel data structure.
 
 Used as `vertex subset` for shared-memory graph algorithms.
 
