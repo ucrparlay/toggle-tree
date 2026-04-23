@@ -9,20 +9,17 @@ CSV_PATH = MAIN_DIR / "table.csv"
 significant_digits = 3
 tasks = [
     {
-        "outdir": MAIN_DIR / "main_table1.tex",
-        "cols": ["F", "H", "J", "S", "T", "U"],
-        "caption": "",
-        "label": "",
-    },
-    {
-        "outdir": MAIN_DIR / "main_table2.tex",
-        "cols": ["N", "P", "R", "K", "M", "C", "E"],
+        "outdir": MAIN_DIR / "main_table.tex",
+        "tables": [
+            ["F", "H", "J", "S", "T", "U"],
+            ["N", "P", "R", "K", "M", "C", "E"],
+        ],
         "caption": "End-to-end Comparison",
         "label": "tab:main_table",
     },
     {
         "outdir": MAIN_DIR / "main_table_hashbag.tex",
-        "cols": ["G", "I", "O", "Q", "L", "M", "D", "E"],
+        "tables": [["G", "I", "O", "Q", "L", "M", "D", "E"]],
         "caption": "Comparison with Hashbag",
         "label": "tab:main_table_hashbag",
     },
@@ -130,17 +127,15 @@ def compute_rows(grouped_rows, all_rows, column_indices):
     return result
 
 
-def render_table(top_header, sub_header, grouped_rows, all_rows, task):
-    column_indices = [excel_col_to_index(col) for col in task["cols"]]
+def render_tabular(top_header, sub_header, grouped_rows, all_rows, cols):
+    column_indices = [excel_col_to_index(col) for col in cols]
     first_header, second_header, cmidrules = build_header_rows(
         top_header, sub_header, column_indices
     )
     body_rows = compute_rows(grouped_rows, all_rows, column_indices)
 
-    has_caption = bool(task.get("caption"))
     align_spec = "l" + "c" * len(column_indices)
     lines = []
-    lines.append(r"\begin{center}")
 
     lines.extend(
         [
@@ -172,11 +167,21 @@ def render_table(top_header, sub_header, grouped_rows, all_rows, task):
         ]
     )
 
+    return lines
+
+
+def render_table(top_header, sub_header, grouped_rows, all_rows, task):
+    has_caption = bool(task.get("caption"))
+    lines = [r"\begin{table}"]
+
+    for cols in task["tables"]:
+        lines.extend(render_tabular(top_header, sub_header, grouped_rows, all_rows, cols))
+
     if has_caption:
         lines.append(rf"\captionof{{table}}{{{task['caption']}}}")
     if task.get("label"):
         lines.append(rf"\label{{{task['label']}}}")
-    lines.append(r"\end{center}")
+    lines.append(r"\end{table}")
 
     return "\n".join(lines) + "\n"
 

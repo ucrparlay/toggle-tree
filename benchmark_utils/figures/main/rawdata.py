@@ -37,29 +37,16 @@ ABBREV = {
 
 TASKS = [
     {
-        "title": "BellmanFord",
-        "caption": "Raw data: BellmanFord. ToT: \\DataStructure. Unit: seconds. Each value is the arithmetic mean of the end-to-end time over five runs after warmup. Bold values indicate the shortest running time.",
-        "cols": ["C", "D", "E"],
+        "cols": ["F", "H", "J", "S", "T", "U"],
+        "caption": "TBD",
     },
     {
-        "title": "BFS",
-        "caption": "Raw data: BFS. ToT: \\DataStructure. ToT+VGC: \\DataStructure implementation optimized with vertical granularity control. Unit: seconds. Each value is the arithmetic mean of the end-to-end time over five runs after warmup. Bold values indicate the shortest running time.",
-        "cols": ["F", "G", "H", "I", "J"],
+        "cols": ["N", "P", "R", "K", "M", "C", "E"],
+        "caption": "TBD",
     },
     {
-        "title": "Coloring",
-        "caption": "Raw data: Coloring. ToT: \\DataStructure. Unit: seconds. Each value is the arithmetic mean of the end-to-end time over five runs after warmup. Bold values indicate the shortest running time.",
-        "cols": ["K", "L", "M"],
-    },
-    {
-        "title": "KCore",
-        "caption": "Raw data: KCore. ToT: \\DataStructure. ToT+VGC+SPL: \\DataStructure implementation optimized with vertical granularity control and sampling. Unit: seconds. Each value is the arithmetic mean of the end-to-end time over five runs after warmup. Bold values indicate the shortest running time.",
-        "cols": ["N", "O", "P", "Q", "R"],
-    },
-    {
-        "title": "WeightedBFS",
-        "caption": "Raw data: WeightedBFS. ToT(IS): \\DataStructure implementation with \\DataTypeA. ToT(IM): \\DataStructure implementation with \\DataTypeB. Unit: seconds. Each value is the arithmetic mean of the end-to-end time over five runs after warmup. Bold values indicate the shortest running time.",
-        "cols": ["S", "T", "U"],
+        "cols": ["G", "I", "O", "Q", "L", "M", "D", "E"],
+        "caption": "TBD",
     },
 ]
 
@@ -114,39 +101,51 @@ def format_cell(value):
     return f"{number:.{decimals}f}"
 
 
-def build_header_rows(sub_header, column_indices):
+def build_header_rows(top_header, sub_header, column_indices):
+    selected_top = [top_header[index] for index in column_indices]
     selected_sub = [sub_header[index] for index in column_indices]
 
-    first_tot = next(
-        index for index, cell in enumerate(selected_sub) if "tot" in cell.lower()
-    )
-    group_row = [
-        r"\multicolumn{2}{c|}{\textbf{Graph Statistics}}",
-        rf"\multicolumn{{{first_tot}}}{{c|}}{{\textbf{{Baselines}}}}",
-        rf"\multicolumn{{{len(selected_sub) - first_tot}}}{{c}}{{\textbf{{Ours}}}}",
-    ]
+    group_row_parts = [r"\multicolumn{2}{c}{}"]
+    cmidrules = []
+    group_ranges = []
+    start = 0
+
+    while start < len(selected_top):
+        end = start + 1
+        while end < len(selected_top) and selected_top[end] == selected_top[start]:
+            end += 1
+
+        span = end - start
+        if span == 1:
+            group_row_parts.append(selected_top[start])
+        else:
+            group_row_parts.append(f"\\multicolumn{{{span}}}{{c}}{{{selected_top[start]}}}")
+            cmidrules.append(f"\\cmidrule(lr){{{start + 3}-{end + 2}}}")
+        group_ranges.append(range(start, end))
+        start = end
+
     column_row = " & ".join(
         ["Type", "Graph"] + [latex_escape(cell) for cell in selected_sub]
     )
-    return " & ".join(group_row), column_row, first_tot
+    return " & ".join(group_row_parts), column_row, cmidrules, group_ranges
 
 
 def render_table(top_header, sub_header, data_rows, task):
     column_indices = [excel_col_to_index(col) for col in task["cols"]]
-    group_header, column_header, first_tot = build_header_rows(sub_header, column_indices)
-
-    data_align = "".join(
-        "|c" if index == first_tot else "c" for index in range(len(column_indices))
+    group_header, column_header, cmidrules, group_ranges = build_header_rows(
+        top_header, sub_header, column_indices
     )
-    align_spec = "ll|" + data_align
+
+    align_spec = "ll" + "c" * len(column_indices)
     lines = [
         r"\begin{center}",
         r"\scriptsize",
         rf"\begin{{tabular}}{{{align_spec}}}",
         r"\toprule",
         group_header + r" \\[2pt]",
-        column_header + r" \\",
     ]
+    lines.extend(cmidrules)
+    lines.append(column_header + r" \\")
     lines.append(r"\midrule")
 
     current_type = ""
@@ -157,14 +156,14 @@ def render_table(top_header, sub_header, data_rows, task):
                 lines.append(r"\midrule")
             current_type = type_name
 
+        values = [format_cell(row[index]) for index in column_indices]
         numbers = [float(row[index]) for index in column_indices]
-        min_value = min(numbers)
-        values = [
-            rf"\textbf{{{format_cell(row[index])}}}"
-            if number == min_value
-            else format_cell(row[index])
-            for index, number in zip(column_indices, numbers)
-        ]
+        for group_range in group_ranges:
+            min_value = min(numbers[index] for index in group_range)
+            for index in group_range:
+                if numbers[index] == min_value:
+                    values[index] = rf"\textbf{{{values[index]}}}"
+
         graph_name = ABBREV.get(row[1], row[1])
         lines.append(
             " & ".join([latex_escape(type_name), latex_escape(graph_name)] + values)
