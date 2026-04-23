@@ -1,8 +1,6 @@
 # Toggle Tree
 
-A parallel data structure provided as a header-only C++ library.
-
-Used as `vertex subset` for shared-memory graph algorithms.
+A parallel data structure. Function as a `vertex subset` for shared-memory graph algorithms.
 
 Requires: Linux (x86_64 with the BMI2 instruction set), GCC >= 10.
 
@@ -17,7 +15,7 @@ Benchmarks in Toggle Tree are designed to produce bit-for-bit identical output w
 No external dependencies are required for running ToT/PASGAL benchmarks.
 They only rely on parlaylib, and we have vendored it for benchmarking.
 
-Benchmarking GBBS baseline Requires bazel 7.7.1.
+Benchmarking the GBBS baseline requires bazel 7.7.1.
 Bazel is only used to build GBBS baselines, and has nothing to do with Toggle Tree.
 
 ### 1.2. Configuration
@@ -26,7 +24,7 @@ Bazel is only used to build GBBS baselines, and has nothing to do with Toggle Tr
 [benchmark_utils/scripts]$ cp example_of_config.sh config.sh
 ```
 
-Then configure number of threads, directory of graphs and graphs to be benchmarked inside it.
+Then configure the number of threads, your directory of graphs and the graphs to be benchmarked inside it.
 
 If you don't have any graphs in your configured directory, you can use the following command to download them: 
 
@@ -42,9 +40,9 @@ If you don't have `*_wghlog.bin` weighted graphs in your configured directory, y
 
 ### 1.3. Benchmarking
 
-Each folder in `benchmarks/` is a seperate implementation, 
+Each folder in `benchmarks/` is a separate implementation, 
 you can use `bash ./bench.sh` in them to run all the graphs, 
-or `bash ./test.sh` for only one graph configured in `config.sh`.
+or `bash ./test.sh` for a single graph configured in `config.sh`.
 
 Scripts for testing all the algorithms are also provided: 
 
@@ -61,7 +59,7 @@ After running benchmarks, two `.csv` files will be generated.
 
 ### 1.4. Bitwise Verification
 
-Aside from fast sanity check with hash, there is a script for bitwise verification.
+Aside from the fast hash-based sanity check, there is a script for bitwise verification.
 
 ```bash
 [benchmark_utils/scripts]$ ./bitwise_verify.sh
@@ -71,10 +69,12 @@ To select a certain graph with a certain algorithm, please edit the first few li
 
 ## 2. Usage
 
-Here is a breif overview of what is included in the interface.
-For more detailed infomation of usage, it will be more straitforward to read `include/toggle/detail/active.h` and `include/toggle/detail/frontier.h`.
+This a header-only C++ library. You may link to /include at compile time for usage. 
 
-Note that the actual interface contains some more inplementation details compared to the paper's presudocode.
+Here is a brief overview of what is included in the interface.
+For more detailed information of usage, it will be more straightforward to read `include/toggle/detail/active.h` and `include/toggle/detail/frontier.h`.
+
+Note that the actual interface contains some more implementation details compared to the paper's psudocode.
 There is no explicit clear function provided, instead, unconditional clear can be done by passing a template parameter `<true>` on `for_each`, 
 and conditional clear is recommended to directly call `remove` inside `for_each`. 
 Remember that any `for_each` or `reduce` visit can only remove the vertex itself!
