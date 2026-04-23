@@ -1,5 +1,6 @@
 import argparse
 import os
+import re
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -60,7 +61,7 @@ ABBREV = {
 
 
 def display_graph_name(graph: str) -> str:
-    return GRAPH_LABELS.get(graph, graph)
+    return ABBREV.get(graph, graph)
 
 
 def read_scale_file(file_path: Path) -> Dict[str, List[float]]:
@@ -165,7 +166,7 @@ def draw_speedup_grid(
 
     fig.legend(
         [legend_handles[system] for system in SYSTEM_RENDER_ORDER if system in legend_handles],
-        [system for system in SYSTEM_RENDER_ORDER if system in legend_handles],
+        [re.sub(r"\bToT\b", "Ours", system) for system in SYSTEM_RENDER_ORDER if system in legend_handles],
         loc="upper right",
         bbox_to_anchor=(0.985, 0.13),
         ncol=3,
