@@ -1,4 +1,4 @@
-# Toggle Tree (ToT)
+# Toggle Tree
 
 A header-only C++ library. 
 
