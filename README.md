@@ -105,9 +105,12 @@ Below are some frequently used reduce functions, provided for convenience:
 
 | Return Value | Active | Frontier |
 | --- | --- | --- | 
+| uint64_t | approximate_vertex() | approximate_vertex() | 
 | uint64_t | reduce_vertex() | reduce_vertex() | 
 | uint64_t | reduce_edge(G) | reduce_edge(G) | 
 | T | reduce_max(sequence) | reduce_max(sequence) | 
 | T | reduce_min(sequence) | reduce_min(sequence) | 
+
+`approximate_vertex()` does reduction on the last but not least layer, and is more efficient than `reduce_vertex()`.
 
 There is also `include/toggle/detail/internal/index_map.h`, which is wrapped in `internal::` to suggest that if `IndexSet` performs better than `IndexMap`, the algorithm is very likely inefficient, such as `WeightedBFS`, which does not use stepping or local search.
