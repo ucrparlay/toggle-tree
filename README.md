@@ -78,7 +78,7 @@ and conditional clear is recommended to directly call `remove` inside `for_each`
 Remember that any `for_each` or `reduce` visit can only remove the vertex itself!
 Do NOT call remove on another vertex inside a same Toggle Tree! 
 
-```cpp
+```text
 toggle::Frontier frontier(n) // empty by default
 toggle::Active active(n)     // full by default
 ```
