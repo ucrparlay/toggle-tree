@@ -73,7 +73,7 @@ This is a header-only C++ library. You may add `/include` to the include path wh
 
 Here is a brief overview of what is included in the interface.
 For more detailed information about usage, it will be more straightforward to read `include/toggle/detail/active.h` and `include/toggle/detail/frontier.h`. 
-THey are brief and clear, and we don't want our document to be longer than the code.
+THey are clear and easy to understand, and we don't want our document to be longer than the code.
 
 Note that the actual interface contains more implementation details than the paper's pseudocode.
 There is no explicit clear function provided. Instead, it is done by passing a template parameter `<true>` to `for_each()`, thereby avoiding an unnecessary tree traversal. 
