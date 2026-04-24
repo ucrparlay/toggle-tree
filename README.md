@@ -75,13 +75,8 @@ Here is a brief overview of what is included in the interface.
 For more detailed information about usage, it will be more straightforward to read `include/toggle/detail/active.h` and `include/toggle/detail/frontier.h`.
 
 Note that the actual interface contains more implementation details than the paper's pseudocode.
-There is no explicit clear function provided. Instead, it is done by passing a template parameter `<true>` to `for_each()`, so as to save an unnecessary tree traversal. 
+There is no explicit clear function provided. Instead, it is done by passing a template parameter `<true>` to `for_each()`, thereby avoiding an unnecessary tree traversal. 
 From the paper's pseudocode you can discover that actually `clear()` always appear immediately after `for_each()`.
-
-Remember that any `for_each` or `reduce` visit can only remove the vertex itself, do NOT call `remove` on another vertex inside the same Toggle Tree! 
-Just like atomic operations do not automatically make your parallel algorithm correct, 
-we do not build some complex framework to guarantee your parallel algorithm is correct. 
-Here, performance is the first-class citizen, not encapsulation.
 
 ```text
 toggle::Frontier frontier(n) // empty by default
