@@ -76,7 +76,7 @@ For more detailed information about usage, it will be more straightforward to re
 
 Note that the actual interface contains more implementation details than the paper's pseudocode.
 There is no explicit clear function provided. Instead, it is done by passing a template parameter `<true>` to `for_each()`, thereby avoiding an unnecessary tree traversal. 
-From the paper's pseudocode you can discover that actually `clear()` always appear immediately after `for_each()`.
+From the paper's pseudocode, one can see that actually `clear()` always appears immediately after `for_each()`.
 
 ```text
 toggle::Frontier frontier(n) // empty by default
