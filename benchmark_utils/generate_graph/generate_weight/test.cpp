@@ -1,12 +1,12 @@
 #include <parlay/io.h>
-#include <GraphIO/GraphIO.h>
+#include <graph_io/graph_io.h>
 
 int main(int argc, char** argv) {
     const char* filepath = argv[1];
     const char* storepath = argv[2];
     const char* range = argv[3];
     const char* subfix = argv[4];
-    GraphIO::Graph<int32_t> G(filepath, std::atoi(range));
+    graph_io::Graph<int32_t> G(filepath, std::atoi(range));
     std::string name = storepath + G.name;
     if (name.find("_sym") != std::string::npos) { name = name.substr(0, name.find("_sym")); }
     if (name.find("_wgh") != std::string::npos) { name = name.substr(0, name.find("_wgh")); }
