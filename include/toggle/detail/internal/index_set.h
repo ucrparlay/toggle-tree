@@ -155,4 +155,4 @@ struct IndexSet {
     inline uint64_t approximate_vertex(){ return empty() ? 0 : approximate_vertex(0, 0); }
 };
 
-}} // namespace internal & ParSet
+}} // namespace internal & toggle
