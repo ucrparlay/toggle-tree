@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+ROOT=../../../..
+source "${ROOT}/dataset/config.sh"
+RUN_BENCH_GRAPH "${ROOT}" true uint32_t _sym_wgh16.bin

@@ -1,0 +1,8 @@
+config.sh
+test
+*.csv
+!sources.csv
+*.txt
+!CMakeLists.txt
+.codex
+.agents
