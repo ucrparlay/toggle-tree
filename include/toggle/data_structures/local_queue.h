@@ -32,7 +32,7 @@ struct LocalQueueImpl {
         local_queue[0] = uint32_t(s_);
     }
 
-    void prefetch_neighbors(uint64_t p) noexcept {
+    [[gnu::always_inline]] void prefetch_neighbors(uint64_t p) noexcept {
         for (uint64_t i = G.template out_offset<Direction>(p), e = toggle::min(G.template out_offset<Direction>(p + 1), i + data_cap); i < e; i++) {
             uint64_t d = G.template out_edge<Direction>(i);
             std::apply([&](auto&... a) { (a.prefetch(d), ...); }, pf_target.t);

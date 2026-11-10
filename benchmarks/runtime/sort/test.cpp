@@ -90,7 +90,7 @@ int main(int argc, char** argv) {
             toggle::Array<uint64_t> input(n);
             toggle::parallel_for(0, n, [&](uint64_t i) { input[i] = make_key(c, i, n); }, 1024);
             timer.start();
-            toggle::sample_sort(input);
+            toggle::parallel_sort(input);
             const double elapsed = timer.stop();
             if (round == 0) std::cout << "    Warmup: " << elapsed << '\n';
             else {

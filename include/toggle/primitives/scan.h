@@ -2,6 +2,7 @@
 #pragma once
 #include <algorithm>
 #include <cstdint>
+#include <numeric>
 #include <type_traits>
 #include "../parallel/macros.h"
 #include "../parallel/parallel.h"
@@ -45,29 +46,14 @@ toggle::Array<decltype(Identity)> scan(uint64_t start, uint64_t end, F&& f) noex
         uint64_t local_start = block * block_size;
         uint64_t local_end = std::min(n, local_start + block_size);
         T offset = offsets[block];
-        if constexpr (std::is_trivially_copyable_v<T> && 64 % sizeof(T) == 0) {
-            constexpr uint64_t cacheline_capacity = 64 / sizeof(T);
-            uint64_t streaming_end = local_start + (local_end - local_start) / cacheline_capacity * cacheline_capacity;
-            for (uint64_t i = local_start; i < streaming_end; i += cacheline_capacity) {
-                alignas(64) T values[cacheline_capacity];
-                for (uint64_t j = 0; j < cacheline_capacity; ++j) {
-                    values[j] = offset;
-                    offset = Combine(offset, f(start + i + j));
-                }
-                output.stream_store(i, values);
-            }
-            for (uint64_t i = streaming_end; i < local_end; ++i) {
-                output[i] = offset;
-                offset = Combine(offset, f(start + i));
-            }
-            toggle::Array<T>::store_fence();
+        constexpr uint64_t width = 64 / std::gcd<uint64_t>(64, sizeof(T));   // width 个元素正好是 64B 的整数倍
+        for (uint64_t i = local_start; i < local_end; i += width) {
+            uint64_t len = std::min(width, local_end - i);
+            T values[width];
+            for (uint64_t j = 0; j < len; j++) { values[j] = offset; offset = Combine(offset, f(start + i + j)); }
+            toggle::stream_copy(output.begin() + i, values, len);
         }
-        else {
-            for (uint64_t i = local_start; i < local_end; i++) {
-                output[i] = offset;
-                offset = Combine(offset, f(start + i));
-            }
-        }
+        toggle::stream_fence();
     }, 1);
     return output;
 }

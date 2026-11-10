@@ -89,7 +89,7 @@ void make_in_edges(Graph& G) {
             edgelist[i] = Entry{uint32_t(e), back};
         }, 256);
     }, 1);
-    toggle::sample_sort(edgelist.get(), edgelist.get() + m, [](const Entry& a, const Entry& b) {
+    toggle::parallel_sort(edgelist.get(), edgelist.get() + m, [](const Entry& a, const Entry& b) {
         if (a.dst != b.dst) return a.dst < b.dst;
         return uint32_t(a.back) < uint32_t(b.back);
     });
@@ -132,12 +132,12 @@ void make_symmetrized(Graph& G) {
         }, 256);
     }, 1);
     if constexpr (Graph::weighted) {
-        toggle::sample_sort(edgelist, [](const Entry& a, const Entry& b) {
+        toggle::parallel_sort(edgelist, [](const Entry& a, const Entry& b) {
             if (a.first != b.first) return a.first < b.first;
             return a.second > b.second;
         });
     }
-    else { toggle::sample_sort(edgelist); }
+    else { toggle::parallel_sort(edgelist); }
     toggle::Array<Entry> kept = toggle::pack<Entry>(0, 2 * m,
         [&](uint64_t i) {
             uint64_t key = key_of(edgelist[i]);

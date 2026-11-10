@@ -163,7 +163,9 @@ struct Scheduler {
             auto [job, empty] = deques[roll_dice()].pop_top();
             if (!empty) { may_wake_others(); };
             if (job != nullptr) { job->execute(); i = 0; }
-            if (i == num_threads * 200) { std::this_thread::sleep_for(std::chrono::nanoseconds(num_threads * 200)); i = 0; }
+            #ifndef TOGGLE_TREE_WEAK_MEMORY
+                if (i >= num_threads * 200) { __builtin_ia32_pause(); }
+            #endif
         }
     }
 
@@ -178,12 +180,12 @@ struct Scheduler {
     }
 
     template <class F>
-    void parallel_for(uint64_t start, uint64_t end, F&& f, uint64_t granularity) noexcept {
+    void parallel_for(uint64_t start, uint64_t end, F&& f, uint64_t granularity, uint64_t is_outer) noexcept {
         if (end - start <= granularity) { for (uint64_t i = start; i < end; i++) { f(i); } return; }
-        uint64_t mid = start + (end - start) / 2;
+        uint64_t mid = start + (end - start) / 2 + is_outer * (end - start) / 16;
         parallel_do(
-            [&]() { parallel_for(start, mid, f, granularity); },
-            [&]() { parallel_for(mid, end, f, granularity); }
+            [&]() { parallel_for(start, mid, f, granularity, 0); },
+            [&]() { parallel_for(mid, end, f, granularity, 0); }
         );
     }
 };

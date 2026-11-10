@@ -121,7 +121,7 @@ toggle::Array<uint32_t> k_core_decomposition(Graph& G) {
                     }, 128);
                 }
                 else {
-                    auto local_queue = toggle::LocalQueue(G, 128, v);
+                    auto local_queue = toggle::LocalQueue(G, 128, v, toggle::prefetch_target(active, coreness));
                     while (true) {
                         uint64_t s = local_queue.pop_top();
                         if (s == UINT64_MAX) { break; }

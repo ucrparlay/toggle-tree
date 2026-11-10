@@ -155,28 +155,6 @@ struct Array {
     const T *end() const noexcept { return data_ + size_; }
     T &operator[](uint64_t i) noexcept { return data_[i]; }
     const T &operator[](uint64_t i) const noexcept { return data_[i]; }
-    T &back() noexcept { return data_[size() - 1]; }
-
-    void stream_store(uint64_t i, const void* src) noexcept {
-        static_assert(std::is_trivially_copyable_v<T> && 64 % sizeof(T) == 0);
-        #if !defined(TOGGLE_TREE_WEAK_MEMORY) && defined(__AVX512F__)
-            using V = long long __attribute__((vector_size(64), may_alias));
-            V value; __builtin_memcpy(&value, src, sizeof(value));
-            #if defined(__clang__)
-                __builtin_nontemporal_store(value, reinterpret_cast<V*>(data_ + i));
-            #else
-                __builtin_ia32_movntdq512(reinterpret_cast<V*>(data_ + i), value);
-            #endif
-        #else
-            __builtin_memcpy(data_ + i, src, 64);
-        #endif
-    }
-
-    static void store_fence() noexcept {
-        #if !defined(TOGGLE_TREE_WEAK_MEMORY) && defined(__AVX512F__)
-            __builtin_ia32_sfence();
-        #endif
-    }
 
     template <int Write = 1>
     void prefetch([[maybe_unused]] uint64_t i) noexcept {

@@ -19,7 +19,7 @@ namespace toggle {
     inline uint64_t worker_id() noexcept { return internal::Scheduler::thread_id; }
     template <class F>
     void parallel_for(uint64_t start, uint64_t end, F&& f, uint64_t granularity) noexcept {
-        internal::get_scheduler().parallel_for(start, end, f, granularity);
+        internal::get_scheduler().parallel_for(start, end, f, granularity, 1);
     }
     template <class LF, class RF>
     void parallel_do(LF&& lf, RF&& rf) noexcept {

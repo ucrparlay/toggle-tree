@@ -119,7 +119,7 @@ Our default scheduler is a lightweight but reliable design: scheduler queue over
 - `toggle::hash32`
 - `toggle::hash64`
 - `toggle::random_permutation`
-- `toggle::sample_sort`
+- `toggle::parallel_sort`
 
 ### 3.4. benchmark_utils
 

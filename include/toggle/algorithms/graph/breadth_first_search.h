@@ -95,7 +95,7 @@ toggle::Array<uint32_t> breadth_first_search(Graph& G, uint64_t source = 0) {
                     }, 256);
                 }
                 else {
-                    auto local_queue = toggle::LocalQueue(G, 1024, v, toggle::prefetch_target(dist));
+                    auto local_queue = toggle::LocalQueue<true>(G, 1024, v, toggle::prefetch_target(dist));
                     while (true) {
                         uint64_t s = local_queue.pop_top();
                         if (s == UINT64_MAX) { break; }
@@ -212,7 +212,7 @@ toggle::Array<uint64_t> breadth_first_search_tree(Graph& G, uint64_t source = 0)
                     }, 256);
                 }
                 else {
-                    auto local_queue = toggle::LocalQueue(G, 1024, v, toggle::prefetch_target(dist_and_parent));
+                    auto local_queue = toggle::LocalQueue<true>(G, 1024, v, toggle::prefetch_target(dist_and_parent));
                     while (true) {
                         uint64_t s = local_queue.pop_top();
                         if (s == UINT64_MAX) { break; }
